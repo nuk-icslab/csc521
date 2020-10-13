@@ -1,0 +1,6 @@
+unsigned char	myethaddr[] = {0x54, 0x27, 0x1e, 0x66, 0x59, 0xdb};
+/* unsigned char	myethaddr[] = {0x0a, 0x01, 0x00, 0x01, 0x55, 0x01}; */
+unsigned char	myipaddr[] = {192, 168, 0, 146};
+
+unsigned char	defarpip[] = {192, 168, 0, 1};
+
