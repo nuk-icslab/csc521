@@ -3,13 +3,13 @@ CFLAGS=-g -O0 -Wall
 LDFLAGS=-lpcap
 
 testprog: testprog.c
-	$(CC) $(CGLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 testrecv: testrecv.c
-	$(CC) $(CGLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 testsend: testsend.c
-	$(CC) $(CGLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -rf testprog
