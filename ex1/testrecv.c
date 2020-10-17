@@ -20,11 +20,10 @@ int main()
     
     
     /* Retrieve the device list on the local machine */
-#if HAVE_REMOTE
-    if (pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
+    if(pcap_findalldevs(&alldevs, errbuf) == -1)
     {
-        fprintf(stderr,"Error in pcap_findalldevs: %s\n", errbuf);
-        exit(1);
+	    fprintf(stderr,"Error in pcap_findalldevs: %s\n", errbuf);
+	    exit(1);
     }
     
     /* Print the list */
@@ -39,7 +38,7 @@ int main()
     
     if(i==0)
     {
-        printf("\nNo interfaces found! Make sure WinPcap is installed.\n");
+        printf("\nNo interfaces found! Make sure libpcap is installed.\n");
         return -1;
     }
     
@@ -56,7 +55,7 @@ int main()
     
     /* Jump to the selected adapter */
     for(d=alldevs, i=0; i< inum-1 ;d=d->next, i++);
-    
+
     /* Open the device */
     if ( (adhandle= pcap_open_live(d->name,          // name of the device
                               65536,            // portion of the packet to capture. 
@@ -66,13 +65,13 @@ int main()
                               errbuf            // error buffer
                               ) ) == NULL)
     {
-        fprintf(stderr,"\nUnable to open the adapter. %s is not supported by WinPcap\n", d->name);
+        fprintf(stderr,"\nUnable to open the adapter. %s is not supported by libpcap\n", d->name);
         /* Free the device list */
         pcap_freealldevs(alldevs);
         return -1;
     }
-    
-    printf("\nlistening on %s...\n", d->description);
+
+    printf("\nlistening on %s...\n", d->name);
     
     /* At this point, we don't need any more the device list. Free it */
     pcap_freealldevs(alldevs);
@@ -91,6 +90,9 @@ int main()
         
         printf("%s,%.6d len:%d\n", timestr, header->ts.tv_usec, header->len);
     }
+
+    // Release the handler
+    pcap_close(adhandle);
     
     if(res == -1){
         printf("Error reading the packets: %s\n", pcap_geterr(adhandle));

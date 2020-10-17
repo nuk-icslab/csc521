@@ -14,20 +14,19 @@ int i;
     /* Check the validity of the command line */
     if (argc != 2)
     {
-        printf("usage: %s interface (e.g. 'rpcap://eth0')", argv[0]);
+        printf("usage: %s interface (e.g. 'eth0')", argv[0]);
         return;
     }
     
     /* Open the output device */
-    if ( (fp= pcap_open(argv[1],            // name of the device
+    if ( (fp= pcap_open_live(argv[1],            // name of the device
                         100,                // portion of the packet to capture (only the first 100 bytes)
                         PCAP_OPENFLAG_PROMISCUOUS,  // promiscuous mode
                         1000,               // read timeout
-                        NULL,               // authentication on the remote machine
                         errbuf              // error buffer
                         ) ) == NULL)
     {
-        fprintf(stderr,"\nUnable to open the adapter. %s is not supported by WinPcap\n", argv[1]);
+        fprintf(stderr,"\nUnable to open the adapter. %s is not supported by libpcap\n", argv[1]);
         return;
     }
 
