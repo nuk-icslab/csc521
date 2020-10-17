@@ -5,6 +5,11 @@
 #include <time.h>
 #include <errno.h>
 
+// For libpcap that doesn't support WinPcap
+#ifndef PCAP_OPENFLAG_PROMISCUOUS
+#define PCAP_OPENFLAG_PROMISCUOUS 1
+#endif
+
 #define FG_NATIVE_CYGWIN	1
 
 #define FG_ARP_SEND_REQUEST	1

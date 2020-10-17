@@ -2,6 +2,10 @@
 #include <time.h>
 #include <pcap/pcap.h>
 
+// For libpcap that doesn't support WinPcap
+#ifndef PCAP_OPENFLAG_PROMISCUOUS
+#define PCAP_OPENFLAG_PROMISCUOUS 1
+#endif
 
 int main()
 {
