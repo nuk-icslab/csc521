@@ -1,8 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <pcap/pcap.h>
 
-#include <pcap.h>
-
+// For libpcap that doesn't support WinPcap
+#ifndef PCAP_OPENFLAG_PROMISCUOUS
+#define PCAP_OPENFLAG_PROMISCUOUS 1
+#endif
 
 void main(int argc, char **argv)
 {
