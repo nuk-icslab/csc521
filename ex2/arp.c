@@ -32,7 +32,7 @@ arp_request(pcap_t *fp, unsigned char *ip)
 	memset(pkt.padding, 0, ARP_PADDING);
 	
 	if(pcap_sendpacket(fp, (unsigned char *) &pkt, sizeof(pkt)) != 0) {
-        	fprintf(stderr,"\nError sending: \n", pcap_geterr(fp));
+        	fprintf(stderr,"\nError sending: %s\n", pcap_geterr(fp));
 	}
 #if(DEBUG_ARP_REQUEST == 1)
 	printf("arp_request() to %s\n", ip_addrstr(ip, NULL));
@@ -64,7 +64,7 @@ arp_reply(pcap_t *fp, unsigned char *dsteth, unsigned char *dstip)
 	memset(pkt.padding, 0, 18);
 	
 	if(pcap_sendpacket(fp, (unsigned char *) &pkt, sizeof(pkt)) != 0) {
-        	fprintf(stderr,"\nError sending: \n", pcap_geterr(fp));
+        	fprintf(stderr,"\nError sending: %s\n", pcap_geterr(fp));
 	}
 #if(DEBUG_ARP_REPLY == 1)
 	printf("arp_reply() to %s\n", ip_addrstr(dstip, NULL));
@@ -74,12 +74,10 @@ arp_reply(pcap_t *fp, unsigned char *dsteth, unsigned char *dstip)
 void
 arp_main(pcap_t *fp, unsigned char *pkt, int len)
 {
-	myeth_t		*eth;
 	myetharp_t	*arp;
 	char		srceth[BUFLEN_ETH], srcip[BUFLEN_IP];
 	char		dsteth[BUFLEN_ETH], dstip[BUFLEN_IP];
 
-	eth = (myeth_t *) pkt;
 	arp = (myetharp_t *) pkt;
 
 #if(DEBUG_ARP == 1)

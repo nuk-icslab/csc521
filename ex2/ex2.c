@@ -33,11 +33,11 @@ main_proc(pcap_t *fp)
 		if(res > 0) {
 #if(DEBUG_PACKET == 1)
 			/* print pkt timestamp and pkt len */
-        	printf("*%s %s=>%s (Type=%.2x%.2x/Len=%ld)\n",
-			time2decstr(header->ts.tv_sec),
-			eth_macaddr(pkt_data + 6, addrsrc),
-			eth_macaddr(pkt_data, addrdst),
-			pkt_data[12], pkt_data[13], header->len);
+        printf("*%s %s=>%s (Type=%.2x%.2x/Len=%d)\n",
+					time2decstr(header->ts.tv_sec),
+					eth_macaddr(pkt_data + 6, addrsrc),
+					eth_macaddr(pkt_data, addrdst),
+					pkt_data[12], pkt_data[13], header->len);
 #endif /* DEBUG_PACKET */
 			pkt = (myeth_t *) pkt_data;
 			pktlen = header->caplen;
