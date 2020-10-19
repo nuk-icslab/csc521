@@ -92,7 +92,7 @@ int main()
         localtime_r(&local_tv_sec, &ltime);
         strftime( timestr, sizeof timestr, "%H:%M:%S", &ltime);
         
-        printf("%s,%.6d len:%d\n", timestr, header->ts.tv_usec, header->len);
+        printf("%s,%.6ld len:%d\n", timestr, header->ts.tv_usec, header->len);
     }
 
     // Release the handler
