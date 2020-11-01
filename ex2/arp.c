@@ -3,35 +3,32 @@
 #include "common.h"
 #include "arp.h"
 
-unsigned char	ethbroadcast[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-unsigned char	ethnull[] = {0, 0, 0, 0, 0, 0};
-
 /*
  * arp_request() - send a ARP request for <IP> address
  */
 
 void
-arp_request(pcap_t *fp, unsigned char *ip)
+arp_request(pcap_t *fp, uint8_t *ip)
 {
 	myetharp_t		pkt;
 	
 	if(ip == NULL) ip = defarpip;
-	memcpy(pkt.eth_dst, ethbroadcast, 6);
-	memcpy(pkt.eth_src, myethaddr, 6);
+	COPY_ETH_ADDR(pkt.eth_dst, eth_broadcast_addr);
+	COPY_ETH_ADDR(pkt.eth_src, myethaddr);
 	pkt.eth_type = ETH_ARP;
 
-	pkt.arp_ethtype = 0x0100;
-	pkt.arp_iptype = ETH_IP;
-	pkt.arp_ethlen = 6;
-	pkt.arp_iplen = 4;
-	pkt.arp_op = 0x0100;
-	memcpy(pkt.arp_srceth, myethaddr, 6);
-	memcpy(pkt.arp_srcip, myipaddr, 4);
-	memcpy(pkt.arp_dsteth, ethnull, 6);	
-	memcpy(pkt.arp_dstip, ip, 4);
+	pkt.arp.ethtype = ARP_ETH_TYPE;
+	pkt.arp.iptype = ETH_IP;
+	pkt.arp.ethlen = ETH_ADDR_LEN;
+	pkt.arp.iplen = IPV4_ADDR_LEN;
+	pkt.arp.op = ARP_OP_REQUEST;
+	COPY_ETH_ADDR(pkt.arp.srceth, myethaddr);
+	COPY_IPV4_ADDR(pkt.arp.srcip, myipaddr);
+	COPY_ETH_ADDR(pkt.arp.dsteth, eth_null_addr);
+	COPY_IPV4_ADDR(pkt.arp.dstip, ip);
 	memset(pkt.padding, 0, ARP_PADDING);
 	
-	if(pcap_sendpacket(fp, (unsigned char *) &pkt, sizeof(pkt)) != 0) {
+	if(pcap_sendpacket(fp, (uint8_t *) &pkt, sizeof(pkt)) != 0) {
         	fprintf(stderr,"\nError sending: %s\n", pcap_geterr(fp));
 	}
 #if(DEBUG_ARP_REQUEST == 1)
@@ -44,26 +41,26 @@ arp_request(pcap_t *fp, unsigned char *ip)
  */
 
 void
-arp_reply(pcap_t *fp, unsigned char *dsteth, unsigned char *dstip)
+arp_reply(pcap_t *fp, uint8_t *dsteth, uint8_t *dstip)
 {
 	myetharp_t		pkt;
 
-	memcpy(pkt.eth_dst, dsteth, 6);
-	memcpy(pkt.eth_src, myethaddr, 6);
+	COPY_ETH_ADDR(pkt.eth_dst, dsteth);
+	COPY_ETH_ADDR(pkt.eth_src, myethaddr);
 	pkt.eth_type = ETH_ARP;
 
-	pkt.arp_ethtype = 0x0100;
-	pkt.arp_iptype = ETH_IP;
-	pkt.arp_ethlen = 6;
-	pkt.arp_iplen = 4;
-	pkt.arp_op = 0x0200;
-	memcpy(pkt.arp_srceth, myethaddr, 6);
-	memcpy(pkt.arp_srcip, myipaddr, 4);
-	memcpy(pkt.arp_dsteth, dsteth, 6);
-	memcpy(pkt.arp_dstip, dstip, 4);
-	memset(pkt.padding, 0, 18);
+	pkt.arp.ethtype = ARP_ETH_TYPE;
+	pkt.arp.iptype = ETH_IP;
+	pkt.arp.ethlen = ETH_ADDR_LEN;
+	pkt.arp.iplen = IPV4_ADDR_LEN;
+	pkt.arp.op = ARP_OP_REPLY;
+	COPY_ETH_ADDR(pkt.arp.srceth, myethaddr);
+	COPY_IPV4_ADDR(pkt.arp.srcip, myipaddr);
+	COPY_ETH_ADDR(pkt.arp.dsteth, dsteth);
+	COPY_IPV4_ADDR(pkt.arp.dstip, dstip);
+	memset(pkt.padding, 0, ARP_PADDING);
 	
-	if(pcap_sendpacket(fp, (unsigned char *) &pkt, sizeof(pkt)) != 0) {
+	if(pcap_sendpacket(fp, (uint8_t *) &pkt, sizeof(pkt)) != 0) {
         	fprintf(stderr,"\nError sending: %s\n", pcap_geterr(fp));
 	}
 #if(DEBUG_ARP_REPLY == 1)
@@ -72,7 +69,7 @@ arp_reply(pcap_t *fp, unsigned char *dsteth, unsigned char *dstip)
 }
 
 void
-arp_main(pcap_t *fp, unsigned char *pkt, int len)
+arp_main(pcap_t *fp, uint8_t *pkt, int len)
 {
 	myetharp_t	*arp;
 	char		srceth[BUFLEN_ETH], srcip[BUFLEN_IP];
@@ -84,21 +81,21 @@ arp_main(pcap_t *fp, unsigned char *pkt, int len)
 	printf("ARP Eth=%04x/%d, IP=%04x/%d, Op=%04x\n"
 		"\tFrom %s (%s)\n"
 		"\tTo   %s (%s)\n",
-		(int) arp->arp_ethtype, (int) arp->arp_ethlen,
-		(int) arp->arp_iptype,  (int) arp->arp_iplen,
-		(int) arp->arp_op,
-		eth_macaddr(arp->arp_srceth, srceth), ip_addrstr(arp->arp_srcip, srcip),
-		eth_macaddr(arp->arp_dsteth, dsteth), ip_addrstr(arp->arp_dstip, dstip));
+		(int) arp->arp.ethtype, (int) arp->arp.ethlen,
+		(int) arp->arp.iptype,  (int) arp->arp.iplen,
+		(int) arp->arp.op,
+		eth_macaddr(arp->arp.srceth, srceth), ip_addrstr(arp->arp.srcip, srcip),
+		eth_macaddr(arp->arp.dsteth, dsteth), ip_addrstr(arp->arp.dstip, dstip));
 #endif /* DEBUG_ARP */
 
 	/* ARP request to My IP: reply it */
-	switch(arp->arp_op) {
-	case 0x0100: /* ARP Request */
-		if(memcmp(arp->arp_dstip, myipaddr, 4) == 0)
-			arp_reply(fp, arp->arp_srceth, arp->arp_srcip);
+	switch(arp->arp.op) {
+	case ARP_OP_REQUEST: /* ARP Request */
+		if(memcmp(arp->arp.dstip, myipaddr, IPV4_ADDR_LEN) == 0)
+			arp_reply(fp, arp->arp.srceth, arp->arp.srcip);
 		break;
 
-	case 0x0200: /* ARP Reply */
+	case ARP_OP_REPLY: /* ARP Reply */
 		break;
 
 #if(DEBUG_ARP == 1)

@@ -4,13 +4,12 @@
 #include <pcap/pcap.h>
 #include <time.h>
 #include <errno.h>
+#include <stdint.h>
 
 // For libpcap that doesn't support WinPcap
 #ifndef PCAP_OPENFLAG_PROMISCUOUS
 #define PCAP_OPENFLAG_PROMISCUOUS 1
 #endif
-
-#define FG_NATIVE_CYGWIN	1
 
 #define FG_ARP_SEND_REQUEST	1
 
@@ -41,22 +40,28 @@
 #define ETH_IP		0x0008
 #define ETH_ARP		0x0608
 
+#define ETH_ADDR_LEN 6
+#define IPV4_ADDR_LEN 4
+
 typedef struct {
-	unsigned char	eth_dst[6];
-	unsigned char	eth_src[6];
-	unsigned short	eth_type;
-	unsigned char	data[1];
+	uint8_t	eth_dst[ETH_ADDR_LEN];
+	uint8_t	eth_src[ETH_ADDR_LEN];
+	uint16_t	eth_type;
+	uint8_t	data[MAX_CAP_LEN];
 } myeth_t;
 
-typedef unsigned long int	ipaddr_t;
+#define COPY_ETH_ADDR(dst, src)	(memcpy((dst), (src), ETH_ADDR_LEN))
+#define COPY_IPV4_ADDR(dst, src)	(memcpy((dst), (src), IPV4_ADDR_LEN))
+
+typedef uint32_t	ipaddr_t;
 
 /******
- ******
+ ****** from config.c
  ******/
 
-extern unsigned char	myethaddr[6];
-extern unsigned char	myipaddr[4];
-extern unsigned char	defarpip[4];
+extern uint8_t	myethaddr[ETH_ADDR_LEN];
+extern uint8_t	myipaddr[IPV4_ADDR_LEN];
+extern uint8_t	defarpip[IPV4_ADDR_LEN];
 
 #define getip(ipaddr)	(*((ipaddr_t *)(ipaddr)))
 #define ismyip(ipaddr)	((getip(ipaddr)) == getip(myipaddr))
@@ -73,5 +78,12 @@ extern char			*eth_macaddr(const unsigned char *a, char *buf);
 
 extern void			print_ip(unsigned char *ip, char *msg);
 extern void			print_data(const unsigned char *data, int len);
+
+/******
+ ******	constants
+ ******/
+
+extern const uint8_t eth_broadcast_addr[ETH_ADDR_LEN];
+extern const uint8_t eth_null_addr[ETH_ADDR_LEN];
 
 #endif /* __COMMON_H__ */

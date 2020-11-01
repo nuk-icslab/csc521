@@ -49,7 +49,7 @@ main_proc(pcap_t *fp)
 #if(DEBUG_PACKET_DUMP == 0 && DEBUG_ARP_DUMP == 1)
 				print_data(pkt_data, pktlen);
 #endif /* DEBUG_ARP_DUMP */
-				arp_main(fp, (unsigned char *) pkt_data, pktlen);
+				arp_main(fp, (uint8_t *) pkt_data, pktlen);
 				break;
 			}
 		}
@@ -135,8 +135,6 @@ main(int argc, char *argv[])
 {
 	char	*devname, errbuf[PCAP_ERRBUF_SIZE];
 	pcap_t	*fp;
-	//DWORD	ThreadId;
-	//HANDLE	ThreadHandle;
 
 	/*----- Get device name */
 	if (argc == 2) {

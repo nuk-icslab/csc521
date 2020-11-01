@@ -10,7 +10,6 @@
  ****** Utilities
  ******/
 
-#if (FG_NATIVE_CYGWIN == 1)
 #include <sys/select.h>
 
 /*
@@ -35,14 +34,6 @@ readready()
 	} while(errno == EINTR);
 	return ret;
 }
-
-#else
-int
-readready()
-{
-	return _kbhit();
-}
-#endif /* FG_NATIVE_CYGWIN */
 
 /*
  * time2decstr()
@@ -80,7 +71,7 @@ my_inet_addr(char *ip)
  */
 
 char *
-ip_addrstr(unsigned char *ip, char *buf)
+ip_addrstr(uint8_t *ip, char *buf)
 {
 	static char	ipbuf[BUFLEN_IP];
 
@@ -95,7 +86,7 @@ ip_addrstr(unsigned char *ip, char *buf)
  */
 
 char *
-eth_macaddr(const unsigned char *a, char *buf)
+eth_macaddr(const uint8_t *a, char *buf)
 {
 	static char	ethbuf[BUFLEN_ETH];
 
@@ -110,11 +101,11 @@ eth_macaddr(const unsigned char *a, char *buf)
  */
  
 void
-print_ip(unsigned char *ip, char *endmsg)
+print_ip(uint8_t *ip, char *endmsg)
 {
 	int	i;
 
-	for(i = 0; i < 4; i++) {
+	for(i = 0; i < IPV4_ADDR_LEN; i++) {
 		if(i != 0) printf(".");
 		printf("%d", (int) ip[i]);
 	}
@@ -126,7 +117,7 @@ print_ip(unsigned char *ip, char *endmsg)
  */
  
 void
-print_data(const unsigned char *data, int len)
+print_data(const uint8_t *data, int len)
 {
 	int		i;
 

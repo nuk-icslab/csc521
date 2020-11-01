@@ -1,41 +1,39 @@
 #ifndef __ARP_H__
 #define __ARP_H__
 
-#include <pcap.h>
+#include <pcap/pcap.h>
+#include "common.h"
 
-#define ARP_PADDING	18
+#define ARP_PADDING	(46-sizeof(myarp_t))
+
+#define ARP_ETH_TYPE 0x0100
+#define ARP_OP_REQUEST 0x0100
+#define ARP_OP_REPLY 0x0200
 
 typedef struct {
-	unsigned short	arp_ethtype;
-	unsigned short	arp_iptype;
-	unsigned char	arp_ethlen;
-	unsigned char	arp_iplen;
-	unsigned short	arp_op;
-	unsigned char	arp_srceth[6];
-	unsigned char	arp_srcip[4];
-	unsigned char	arp_dsteth[6];
-	unsigned char	arp_dstip[4];
+	uint16_t	ethtype;
+	uint16_t	iptype;
+	uint8_t	ethlen;
+	uint8_t	iplen;
+	uint16_t	op;
+	uint8_t	srceth[ETH_ADDR_LEN];
+	uint8_t	srcip[IPV4_ADDR_LEN];
+	uint8_t	dsteth[ETH_ADDR_LEN];
+	uint8_t	dstip[IPV4_ADDR_LEN];
 } myarp_t;
 
 typedef struct {
-	unsigned char	eth_dst[6];
-	unsigned char	eth_src[6];
-	unsigned short	eth_type;
+	uint8_t	eth_dst[ETH_ADDR_LEN];
+	uint8_t	eth_src[ETH_ADDR_LEN];
+	uint16_t	eth_type;
+	
+	myarp_t arp;
 
-	unsigned short	arp_ethtype;
-	unsigned short	arp_iptype;
-	unsigned char	arp_ethlen;
-	unsigned char	arp_iplen;
-	unsigned short	arp_op;
-	unsigned char	arp_srceth[6];
-	unsigned char	arp_srcip[4];
-	unsigned char	arp_dsteth[6];
-	unsigned char	arp_dstip[4];
-	unsigned char	padding[ARP_PADDING];
+	uint8_t	padding[ARP_PADDING];
 } myetharp_t;
 
-extern void arp_request(pcap_t *fp, unsigned char *ip);
-extern void arp_reply(pcap_t *fp, unsigned char *dsteth, unsigned char *dstip);
-extern void arp_main(pcap_t *fp, unsigned char *pkt, int len);
+extern void arp_request(pcap_t *fp, uint8_t *ip);
+extern void arp_reply(pcap_t *fp, uint8_t *dsteth, uint8_t *dstip);
+extern void arp_main(pcap_t *fp, uint8_t *pkt, int len);
 
 #endif /* __ARP_H__ */
