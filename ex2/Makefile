@@ -12,5 +12,5 @@ ex2: ex2.o $(DEPS)
 	$(CC) -o $@ $^ -c $(CFLAGS)
 
 clean:
-	rm -rf ex2.o $(DEPS)
+	rm -rf *.o
 	rm -rf ex2

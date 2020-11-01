@@ -2,6 +2,7 @@
 #define __COMMON_H__
 
 #include <pcap/pcap.h>
+#include <stdio.h>
 #include <time.h>
 #include <errno.h>
 #include <stdint.h>
@@ -12,6 +13,7 @@
 #endif
 
 #define FG_ARP_SEND_REQUEST	1
+#define FG_IP_DUMP	1
 
 /***
  ***	Flags
