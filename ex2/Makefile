@@ -1,16 +1,33 @@
+# The target name of the executable
+TARGET=ex2
+
+# The definition of directories
+INCLUDE_DIR=include
+SRC_DIR=src
+TARGET_DIR=build
+
+# Configuration of compiler and linker
 CC=gcc
-CFLAGS=-g -O0 -Wall
+CFLAGS=-g -O0 -Wall -I$(INCLUDE_DIR)
 LDFLAGS=-lpcap
-DEPS=arp.o config.o util.o constant.o
 
-all: ex2
+# Find all of the .c files in SRC_DIR.
+# And convert the suffix to .o
+DEPS=$(patsubst $(SRC_DIR)/%.c, $(TARGET_DIR)/%.o, $(wildcard $(SRC_DIR)/*.c))
 
-ex2: ex2.o $(DEPS)
+all: $(TARGET_DIR) $(TARGET)
+
+$(TARGET_DIR):
+	mkdir $(TARGET_DIR)
+
+# Link
+$(TARGET): $(DEPS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-%.o: %.c
+# Compile
+$(TARGET_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) -o $@ $^ -c $(CFLAGS)
 
 clean:
-	rm -rf *.o
-	rm -rf ex2
+	rm -rf $(TARGET_DIR)
+	rm -rf $(TARGET)
