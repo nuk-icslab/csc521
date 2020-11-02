@@ -17,6 +17,7 @@ DEPS=$(patsubst $(SRC_DIR)/%.c, $(TARGET_DIR)/%.o, $(wildcard $(SRC_DIR)/*.c))
 
 all: $(TARGET_DIR) $(TARGET)
 
+# Make the target directory
 $(TARGET_DIR):
 	mkdir $(TARGET_DIR)
 
