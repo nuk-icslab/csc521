@@ -10,6 +10,7 @@
  ****** Utilities
  ******/
 
+#if (FG_NATIVE_CYGWIN == 1)
 #include <sys/select.h>
 
 /*
@@ -34,6 +35,15 @@ readready()
 	} while(errno == EINTR);
 	return ret;
 }
+
+#else
+int
+readready()
+{
+	extern int _kbhit();
+	return _kbhit();
+}
+#endif /* FG_NATIVE_CYGWIN */
 
 /*
  * time2decstr()
