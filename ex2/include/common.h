@@ -14,18 +14,18 @@
 
 #define FG_NATIVE_CYGWIN	1
 
-#define FG_ARP_SEND_REQUEST	1
+#define FG_ARP_SEND_REQUEST	0
 
 /***
  ***	Flags
  ***/
 
-#define DEBUG_PACKET		1
+#define DEBUG_PACKET		0
 #define DEBUG_PACKET_DUMP	0
-#define DEBUG_ARP			1
-#define DEBUG_ARP_REQUEST	1
+#define DEBUG_ARP			0
+#define DEBUG_ARP_REQUEST	0
 #define DEBUG_ARP_REPLY		1
-#define DEBUG_ARP_DUMP		1
+#define DEBUG_ARP_DUMP		0
 
 #define MAX_CAP_LEN			1514
 #define MAX_DUMP_PKT		5

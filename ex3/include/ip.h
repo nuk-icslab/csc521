@@ -1,35 +1,58 @@
 #ifndef __IP_H__
 #define __IP_H__
 
-#include <pcap/pcap.h>
-#include <stdio.h>
-#include "common.h"
+#include <pcap.h>
+
+/***
+ ***	IP
+ ***/
 
 typedef struct {
-	unsigned char	dst[6];
-	unsigned char	src[6];
-	unsigned short	type;
-	unsigned char	data[1];
-} myeth_t;
+	uint8_t	ip_verhlen;
+	uint8_t	ip_servicetype;
+	uint16_t	ip_length;
 
-typedef struct {
-	unsigned char	bypass[12];
-	unsigned char	srcip[4];
-	unsigned char	dstip[4];
-	unsigned char	skip[1];
+	uint16_t	ip_identification;
+	uint16_t	ip_fragoff;
+
+	uint8_t	ip_ttl;
+	uint8_t	ip_protocol;
+	uint16_t	ip_chksum;
+
+	uint8_t	ip_srcip[4];
+	uint8_t	ip_dstip[4];
+
+	uint8_t	data[1];
 } myip_t;
 
 typedef struct {
-	unsigned char	dst[6];
-	unsigned char	src[6];
-	unsigned short	type;
+	uint8_t	eth_dst[6];
+	uint8_t	eth_src[6];
+	uint16_t	eth_type;
 
-	unsigned char	bypass[12];
-	unsigned char	srcip[4];
-	unsigned char	dstip[4];
-	unsigned char	skip[1];
+	uint8_t	ip_verhlen;
+	uint8_t	ip_servicetype;
+	uint16_t	ip_length;
+
+	uint16_t	ip_identification;
+	uint16_t	ip_fragoff;
+
+	uint8_t	ip_ttl;
+	uint8_t	ip_protocol;
+	uint16_t	ip_chksum;
+
+	uint8_t	ip_srcip[4];
+	uint8_t	ip_dstip[4];
+
+	uint8_t	data[1480];
 } myethip_t;
 
-extern void dump_ip(pcap_t*, uint8_t*, int);
+#define hlen(ip)			((ip)->ip_verhlen & 0x0f)
+#define ver(ip)				((ip)->ip_verhlen >> 4)
+#define verhlen(ver,hlen)	(((ver) << 4) + (hlen))
+
+extern uint16_t	ip_checksum(myip_t *ip);
+extern void				ip_send(pcap_t *fp, myethip_t *pkt, int ipdatalen);
+extern void 			ip_main(pcap_t *fp, uint8_t *pkt_data, int pktlen);
 
 #endif /* __IP_H__ */
