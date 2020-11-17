@@ -86,7 +86,6 @@ arp_reply(pcap_t *fp, uint8_t *dsteth, uint8_t *dstip)
 void
 arp_main(pcap_t *fp, uint8_t *pkt, int len)
 {
-	myeth_t			*eth;
 	myetharp_t		*arp;
 	uint8_t	*ethaddr;
 #if(DEBUG_ARP == 1)	
