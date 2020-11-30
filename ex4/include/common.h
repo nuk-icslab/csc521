@@ -4,6 +4,12 @@
 #include <pcap/pcap.h>
 #include <time.h>
 #include <errno.h>
+#include <stdint.h>
+
+// For libpcap that doesn't support WinPcap
+#ifndef PCAP_OPENFLAG_PROMISCUOUS
+#define PCAP_OPENFLAG_PROMISCUOUS 1
+#endif
 
 #define FG_NATIVE_CYGWIN	1
 

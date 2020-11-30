@@ -2,6 +2,7 @@
 #define __IP_H__
 
 #include <pcap/pcap.h>
+#include <stdint.h>
 
 /***
  ***	IP
