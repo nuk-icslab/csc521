@@ -66,7 +66,7 @@ icmp_main(pcap_t *fp, myip_t *ip, int len)
 	switch(icmp->icmp_type) {
 	case 0x00: case 0x08:
 		printf("\n");
-		print_data((unsigned char *) icmp, icmplen);
+		print_data((uint8_t *) icmp, icmplen);
 		break;
 	case 0x03: case 0x05: case 0x0b:
 	default:
@@ -79,7 +79,7 @@ icmp_main(pcap_t *fp, myip_t *ip, int len)
 
 
 void
-icmp_ping(pcap_t *fp, myethip_t *pkt, unsigned char *dstip)
+icmp_ping(pcap_t *fp, myethip_t *pkt, uint8_t *dstip)
 {
 	myethicmp_t	pktbuf;
 	myicmp_t	*icmp;

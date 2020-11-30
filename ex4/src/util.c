@@ -56,7 +56,7 @@ time2decstr(time_t t)
 	struct tm ltime;
 
 	if(t == 0) t = time(0);
-	localtime_s(&ltime, &t);
+	localtime_r(&t, &ltime);
 	strftime(buf, 20, "%Y/%m/%d %H:%M:%S", &ltime);
 	return buf;
 }
@@ -70,10 +70,10 @@ my_inet_addr(char *ip)
 {
 	int				n0, n1, n2, n3;
 	ipaddr_t		ret;
-	unsigned char	*p;
+	uint8_t	*p;
 
-	if(sscanf_s(ip, "%d.%d.%d.%d", &n0, &n1, &n2, &n3) < 4) return 0;
-	p = (unsigned char *) &ret;
+	if(sscanf(ip, "%d.%d.%d.%d", &n0, &n1, &n2, &n3) < 4) return 0;
+	p = (uint8_t *) &ret;
 	p[0] = n0; p[1] = n1; p[2] = n2; p[3] = n3;
 	return ret;
 }
@@ -83,12 +83,12 @@ my_inet_addr(char *ip)
  */
 
 char *
-ip_addrstr(unsigned char *ip, char *buf)
+ip_addrstr(uint8_t *ip, char *buf)
 {
 	static char	ipbuf[BUFLEN_IP];
 
 	if(buf == NULL) buf = ipbuf;
-	sprintf_s(buf, BUFLEN_IP, "%d.%d.%d.%d",
+	sprintf(buf, "%d.%d.%d.%d",
 		(int) ip[0], (int) ip[1], (int) ip[2], (int) ip[3]);
 	return buf;
 }
@@ -98,12 +98,12 @@ ip_addrstr(unsigned char *ip, char *buf)
  */
 
 char *
-eth_macaddr(const unsigned char *a, char *buf)
+eth_macaddr(const uint8_t *a, char *buf)
 {
 	static char	ethbuf[BUFLEN_ETH];
 
 	if(buf == NULL) buf = ethbuf;
-	sprintf_s(buf, BUFLEN_ETH, "%.2x-%.2x-%.2x-%.2x-%.2x-%.2x",
+	sprintf(buf, "%.2x-%.2x-%.2x-%.2x-%.2x-%.2x",
 		a[0], a[1], a[2], a[3], a[4], a[5]);
 	return buf;
 }
@@ -113,7 +113,7 @@ eth_macaddr(const unsigned char *a, char *buf)
  */
  
 void
-print_ip(unsigned char *ip, char *endmsg)
+print_ip(uint8_t *ip, char *endmsg)
 {
 	int	i;
 
@@ -129,7 +129,7 @@ print_ip(unsigned char *ip, char *endmsg)
  */
  
 void
-print_data(const unsigned char *data, int len)
+print_data(const uint8_t *data, int len)
 {
 	int		i;
 
@@ -162,8 +162,8 @@ trimright(char *str)
  * swap16()
  */
 
-unsigned short
-swap16(unsigned short val)
+uint16_t
+swap16(uint16_t val)
 {
 	char	*p, p0;
 
@@ -174,8 +174,8 @@ swap16(unsigned short val)
 	return val;
 }
 
-unsigned long
-swap32(unsigned long val)
+uint32_t
+swap32(uint32_t val)
 {
 	char	*p, p0, p1;
 
@@ -193,18 +193,18 @@ swap32(unsigned long val)
  * checksum()
  */
 
-unsigned short
+uint16_t
 checksum(char *ptr, int len)
 {
-	unsigned short	*buf = (unsigned short *) ptr;
+	uint16_t	*buf = (uint16_t *) ptr;
 	int		nwords = len / 2;
-	unsigned long	sum;
+	uint32_t	sum;
 
 	for(sum = 0; nwords > 0; nwords--)
 		sum += swap16(*buf++);
 	if((len & 0x1) != 0) { /* odd length */
-		sum += swap16(*((unsigned char *) buf));
+		sum += swap16(*((uint8_t *) buf));
 	}		
 	sum = (sum >> 16) + (sum & 0xffff);
-	return swap16((unsigned short)(~sum));
+	return swap16((uint16_t)(~sum));
 }

@@ -1,11 +1,11 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#include <pcap.h>
+#include <pcap/pcap.h>
 #include <time.h>
 #include <errno.h>
 
-#define FG_NATIVE_CYGWIN	0
+#define FG_NATIVE_CYGWIN	1
 
 #define FG_ARP_SEND_REQUEST	0
 #define FG_ICMP_SEND_REQUEST	0
@@ -19,14 +19,14 @@
 #define DEBUG_PACKET_DUMP	0
 
 #define DEBUG_ARP		0
-#define DEBUG_ARP_REQUEST	1
-#define DEBUG_ARP_REPLY		1
+#define DEBUG_ARP_REQUEST	0
+#define DEBUG_ARP_REPLY		0
 #define DEBUG_ARP_DUMP		0
 #define DEBUG_ARPCACHE		1
 
 #define DEBUG_CHECKSUM		0
 
-#define DEBUG_IP		1
+#define DEBUG_IP		0
 #define DEBUG_IP_DUMP		0
 
 #define DEBUG_ICMP		1
@@ -62,25 +62,25 @@
 #define ETH_ARP		0x0608
 
 typedef struct {
-	unsigned char	eth_dst[6];
-	unsigned char	eth_src[6];
-	unsigned short	eth_type;
-	unsigned char	data[1];
+	uint8_t	eth_dst[6];
+	uint8_t	eth_src[6];
+	uint16_t	eth_type;
+	uint8_t	data[1];
 } myeth_t;
 
-typedef unsigned long int	ipaddr_t;
+typedef uint32_t	ipaddr_t;
 
 /******
  ******
  ******/
 
-extern unsigned char	myethaddr[6];
-extern unsigned char	myipaddr[4];
-extern unsigned char	myrouterip[4];
-extern unsigned char	mynetmask[4];
+extern uint8_t	myethaddr[6];
+extern uint8_t	myipaddr[4];
+extern uint8_t	myrouterip[4];
+extern uint8_t	mynetmask[4];
 
-extern unsigned char	defarpip[4];
-extern unsigned char	defpingip[4];
+extern uint8_t	defarpip[4];
+extern uint8_t	defpingip[4];
 
 #define getip(ipaddr)	(*((ipaddr_t *)(ipaddr)))
 #define setip(dip, sip)	(*((ipaddr_t *) (dip)) = *((ipaddr_t *) (sip)))
@@ -93,21 +93,21 @@ extern unsigned char	defpingip[4];
  ******	utilities
  ******/
 
-extern void		pkt_main(pcap_t *fp, struct pcap_pkthdr	*header, unsigned char *pkt_data);
+extern void		pkt_main(pcap_t *fp, struct pcap_pkthdr	*header, uint8_t *pkt_data);
 extern int		pkt_loop(pcap_t *fp, int loop);
 
 extern int		readready();
 extern char		*time2decstr(time_t t);
 extern ipaddr_t		my_inet_addr(char *ip);
-extern char		*ip_addrstr(unsigned char *ip, char *buf);
-extern char		*eth_macaddr(const unsigned char *a, char *buf);
+extern char		*ip_addrstr(uint8_t *ip, char *buf);
+extern char		*eth_macaddr(const uint8_t *a, char *buf);
 
-extern void		print_ip(unsigned char *ip, char *msg);
-extern void		print_data(const unsigned char *data, int len);
+extern void		print_ip(uint8_t *ip, char *msg);
+extern void		print_data(const uint8_t *data, int len);
 extern char		*trimright(char *str);
 
-extern unsigned short	swap16(unsigned short s);
-extern unsigned long	swap32(unsigned long val);
-extern unsigned short	checksum(char *ptr, int len);
+extern uint16_t	swap16(uint16_t s);
+extern uint32_t	swap32(uint32_t val);
+extern uint16_t	checksum(char *ptr, int len);
 
 #endif /* __COMMON_H__ */

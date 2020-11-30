@@ -2,7 +2,7 @@
 #include <stdlib.h>
 /* #include <windows.h> */
 
-#include <pcap.h>
+#include <pcap/pcap.h>
 
 #include "common.h"
 #include "arp.h"
@@ -10,7 +10,7 @@
 #include "dns.h"
 
 void
-pkt_main(pcap_t *fp, struct pcap_pkthdr	*header, unsigned char *pkt_data)
+pkt_main(pcap_t *fp, struct pcap_pkthdr	*header, uint8_t *pkt_data)
 {
     myeth_t			*pkt = (myeth_t *) pkt_data;
 	int				pktlen = header->caplen;
@@ -31,10 +31,10 @@ pkt_main(pcap_t *fp, struct pcap_pkthdr	*header, unsigned char *pkt_data)
 #endif /* DEBUG_PACKET_DUMP */
 	switch(pkt->eth_type) {
 	case ETH_ARP:
-		arp_main(fp, (unsigned char *) pkt_data, pktlen);
+		arp_main(fp, (uint8_t *) pkt_data, pktlen);
 		break;
 	case ETH_IP:
-		ip_main(fp, (unsigned char *) pkt_data, pktlen);
+		ip_main(fp, (uint8_t *) pkt_data, pktlen);
 		break;
 	}
 }
@@ -44,7 +44,7 @@ pkt_loop(pcap_t *fp, int loop)
 {
 	int					i, res;
 	struct pcap_pkthdr	*header;
-	const u_char		*pkt_data;
+	const uint8_t		*pkt_data;
 	
 	/*---- Read the packets */
 	for(i = 0; loop == 0 || i < loop; i++) {
@@ -53,7 +53,7 @@ pkt_loop(pcap_t *fp, int loop)
 			pcap_geterr(fp));
 			return -1;
 		}
-		if(res > 0) pkt_main(fp, header, (unsigned char *) pkt_data);
+		if(res > 0) pkt_main(fp, header, (uint8_t *) pkt_data);
 
 		if(readready() != 0) break;
 	}
@@ -70,7 +70,7 @@ int
 main_proc(pcap_t *fp)
 {
     struct pcap_pkthdr	*header;
-    const u_char	*pkt_data;
+    const uint8_t	*pkt_data;
     char		buf[MAX_LINEBUF];
     ipaddr_t		ip;	
     int			res, key;
@@ -86,7 +86,7 @@ main_proc(pcap_t *fp)
     /* Read the packets */
     while((res = pcap_next_ex( fp, &header, &pkt_data)) >= 0) {
 		/* packet received? */
-		if(res > 0) pkt_main(fp, header, (unsigned char *) pkt_data);
+		if(res > 0) pkt_main(fp, header, (uint8_t *) pkt_data);
 		
 		/* key pressed? */
 		if(!readready()) continue;
@@ -97,7 +97,7 @@ main_proc(pcap_t *fp)
 		if((ip = my_inet_addr(buf)) != 0
 		  || (ip = resolve(fp, buf)) != 0) {
 #if(FG_DNS_DO_PING == 1)
-			icmp_ping(fp, NULL, (unsigned char *) &ip);
+			icmp_ping(fp, NULL, (uint8_t *) &ip);
 #else
 			printf("%s\t%s\n", buf, ip_addrstr(ip, NULL));
 #endif /* FG_DNS_DO_PING */
@@ -122,7 +122,7 @@ char *
 mypcap_getdevice(int defn)
 {
 	pcap_if_t	*alldevs, *d;
-	u_int		inum, i = 0;
+	unsigned int		inum, i = 0;
 	char		errbuf[PCAP_ERRBUF_SIZE];
 	char		buf[MAX_LINEBUF];
 	
@@ -153,7 +153,7 @@ mypcap_getdevice(int defn)
 	
 		printf("Enter the interface number (1-%d):",i);
 		fgets(buf, MAX_LINEBUF, stdin);
-		sscanf_s(buf, "%d", &inum);
+		sscanf(buf, "%d", &inum);
 	}
 
 	if (inum < 1 || inum > i) {
@@ -184,15 +184,20 @@ main(int argc, char *argv[])
 	}
 	
 	/*----- open the specified adapter/interface */
-	if((fp= pcap_open(devname,
+	if((fp= pcap_open_live(devname,
                         MAX_CAP_LEN	/* snaplen*/,
                         PCAP_OPENFLAG_PROMISCUOUS	/*flags*/,
-                        100			/* read timeout (msec) */,
-                        NULL		/* remote authentication */,
+                        100			/* read timeout (msec).
+                           			   This option may be ignored in some OSes */,
                         errbuf		/* error buf */ )
                         ) == NULL) {
         	fprintf(stderr,"\nError opening source: %s\n", errbuf);
 		return -1;
+	}
+
+	/*----- Put the capture device into non-blocking mode */
+	if(pcap_setnonblock(fp, 1, errbuf)!=0){
+		fprintf(stderr,"\nCan't set non-blocking mode: %s\n", errbuf);
 	}
 
 	main_proc(fp);

@@ -3,9 +3,9 @@
 
 #include "udp.h"
 
-typedef unsigned char		byte;
-typedef unsigned short		word;
-typedef unsigned long		longword;
+typedef uint8_t		byte;
+typedef uint16_t		word;
+typedef uint32_t		longword;
 
 /***
  ***	DNS
@@ -80,14 +80,14 @@ struct rrpart {
  */
 
 typedef struct {
-	dnshead_t	h;
-	byte		x[DOMSIZE];
+	dnshead_t	header;
+	byte		payload[DOMSIZE];
 } mydns_t;
 
-extern unsigned char	defdnsip[4];
+extern uint8_t	defdnsip[4];
 
 extern void		dns_main(pcap_t *fp, myip_t *ip, myudp_t *udp, int udplen);
 extern ipaddr_t	resolve(pcap_t *fp, char *name);
-extern int		dns_extract(myudp_t *udp, unsigned char *mip);
+extern int		dns_extract(myudp_t *udp, uint8_t *mip);
 
 #endif /* __DNS_H__ */

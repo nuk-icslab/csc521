@@ -19,22 +19,22 @@ static ipaddr_t		dns_answer = 0;
  */
 
 static word
-dns_unpack(char *dst, char *src, char *buf)
+dns_unpack(byte *dst, byte *src, byte *buf)
 {
 	int		i, j, retval, labellen;
-	char	*savesrc;
+	byte	*savesrc;
 
 	savesrc = src;
 	retval = 0;
 
 	while (*src) {	/* end with 0x00 */
-		j = *((unsigned char *) src);
+		j = *((uint8_t *) src);
 
 		while ((j & 0xC0) == 0xC0) {	/* pointer */
 			if (!retval) retval = src - savesrc + 2;
 			src++;
-			src = &buf[(j & 0x3f)*256 + *((unsigned char *) src)];
-			j = *((unsigned char *) src);
+			src = &buf[(j & 0x3f)*256 + *((uint8_t *) src)];
+			j = *((uint8_t *) src);
 		}
 		labellen = j & 0x3f;	/* the 1st byte is the length */
 		src++;
@@ -57,7 +57,7 @@ dns_unpack(char *dst, char *src, char *buf)
  */
 
 int
-dns_extract(myudp_t *udp, unsigned char *mip)
+dns_extract(myudp_t *udp, uint8_t *mip)
 {
 	mydns_t			*qp = (mydns_t *) udp->udp_data;
 	word			i, j, nans, rcode;
@@ -65,16 +65,16 @@ dns_extract(myudp_t *udp, unsigned char *mip)
 	byte			*p, space[260];
 	int				dns_answer_count = 0;
 
-	nans = swap16(qp->h.ancount);		/* number of answers */
-	rcode = DFG_RCODE & swap16(qp->h.flags);	/* return code */
+	nans = swap16(qp->header.ancount);		/* number of answers */
+	rcode = DFG_RCODE & swap16(qp->header.flags);	/* return code */
 	if (rcode > 0) return(rcode);
 
-	if (nans < 1 || !((swap16(qp->h.flags) & DFG_QR)))
+	if (nans < 1 || !((swap16(qp->header.flags) & DFG_QR)))
 		return (-1); /* error: no answers or response flag not set */
 
 	/*---- question section */
-	p = (byte *) &qp->x;			/* where question starts */
-	i = dns_unpack(space, p, (char *) qp);	/* unpack question name */
+	p = (byte *) &qp->payload;			/* where question starts */
+	i = dns_unpack(space, p, (byte*) qp);	/* unpack question name */
 	p += i+4;	/*  spec defines name then QTYPE + QCLASS = 4 bytes */
 
 	/*---- answer section */
@@ -84,7 +84,7 @@ dns_extract(myudp_t *udp, unsigned char *mip)
 	 */
 
 	while (nans-- > 0) {		/* look at each answer */
-		i = dns_unpack(space,p, (char *) qp); /* answer to unpack */
+		i = dns_unpack(space,p, (byte*) qp); /* answer to unpack */
 		p += i;				/* account for string */
 		rrp = (struct rrpart *)p;	/* resource record here */
 
@@ -94,7 +94,7 @@ dns_extract(myudp_t *udp, unsigned char *mip)
 			dns_answer_count++;
 #if(DEBUG_DNS == 1)
 			printf("dns_extract(): Answer %d = ", dns_answer_count);
-			print_ip((unsigned char *) mip, "\n");
+			print_ip((uint8_t *) mip, "\n");
 #endif /* DEBUG_DNS == 1 */
 			return(0);		/* successful return */
 		}
@@ -112,11 +112,11 @@ dns_extract(myudp_t *udp, unsigned char *mip)
 static void
 dns_qinit(mydns_t *question)
 {
-	question->h.flags = swap16(DFG_RD);
-	question->h.qdcount = swap16(1);
-	question->h.ancount = 0;
-	question->h.nscount = 0;
-	question->h.arcount = 0;
+	question->header.flags = swap16(DFG_RD);
+	question->header.qdcount = swap16(1);
+	question->header.ancount = 0;
+	question->header.nscount = 0;
+	question->header.arcount = 0;
 }
 
 /*
@@ -125,28 +125,36 @@ dns_qinit(mydns_t *question)
  */
 
 static int
-dns_packdom(char *dst, char *src)
+dns_packdom(byte *dst, byte *src)
 {
-	char		*p, *q, *savedst;
-	int			i, dotflag, defflag;
+	byte		*p, *q, *savedst;
+	int			i;
 
 	p = src;
-	dotflag = defflag = 0;
 	savedst = dst;
 
-	do {			/* copy whole string */
+	do {
+		// Reserve the space for length storage.
 		*dst = 0;
-		q = dst + 1;	/* for length */
+		q = dst + 1;
+
+		// Copy the rest of string to dst until dot symbol.
 		while (*p && (*p != '.')) {
 			*q++ = *p++;
 		}
 
-		if((i = p - src) > 0x3f) return(-1);	/* too long */
+		// Calculate the length
+		i = p - src;
+
+		// If the length is too long, return error.
+		if(i > 63) return(-1);
+
+		// Copy the length to the reserved space.
 		*dst = i;
 		*q = 0;
 
-		if (*p) {	/* not finished yet, update pointers */
-			dotflag = 1;
+		// If not finished yet, update pointers.
+		if (*p) {
 			src = ++p;
 			dst = q;
 		}
@@ -164,7 +172,7 @@ static void
 dns_sendom(pcap_t *fp, char *mname, longword nameserver)
 {
 	mydns_t		question;
-	char		namebuf[DOMSIZE];
+	byte		namebuf[DOMSIZE];
 	word		i, ulen;
 	byte		*psave, *p;
 
@@ -172,23 +180,23 @@ dns_sendom(pcap_t *fp, char *mname, longword nameserver)
 	printf("dns_sendom(): %s\n", mname);
 #endif /* DEBUG_DNS == 1 */
 
-	strcpy_s(namebuf, DOMSIZE, mname);
+	strcpy((char*) namebuf, mname);
 
 	dns_qinit(&question);	/* initialize some flag fields */
 
-	psave = (byte*)&(question.x);
-	i = dns_packdom((byte *)&(question.x), namebuf);
+	psave = (byte*)&(question.payload);
+	i = dns_packdom(psave, namebuf);
 
-	p = &(question.x[i]);
+	p = &(question.payload[i]);
 	*p++ = 0;			/* high byte of qtype */
 	*p++ = DTYPE_A;		/* number is < 256, so we know high byte=0 */
 	*p++ = 0;			/* high byte of qclass */
 	*p++ = DCLASS_IN;	/* qtype is < 256 */
 
-	question.h.ident = swap16(DEF_DNS_ID);
+	question.header.ident = swap16(DEF_DNS_ID);
 	ulen = sizeof(dnshead_t)+(p-psave);
 #if(DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_UDP_DUMP == 0 && DEBUG_DNS_DUMP == 1)
-	print_data((unsigned char *)&question, ulen);
+	print_data((uint8_t *)&question, ulen);
 #endif /* DEBUG_DNS_DUMP */
 	udp_send(fp, DEF_DNS_UDP_SRCPORT, nameserver, 53, (char *) &question, ulen);
 }
@@ -241,10 +249,10 @@ dns_main(pcap_t *fp, myip_t *ip, myudp_t *udp, int udplen)
 	print_ip(ip->ip_dstip, "\n");
 #endif /* DEBUG_DNS == 1 */
 #if(DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_UDP_DUMP == 0 && DEBUG_DNS_DUMP == 1)
-		print_data((unsigned char *)udp->udp_data, udplen-8);
+		print_data((uint8_t *)udp->udp_data, udplen-8);
 #endif /* DEBUG_DNS_DUMP */
 
-    	i = dns_extract(udp, (unsigned char *) &ipaddr);
+    	i = dns_extract(udp, (uint8_t *) &ipaddr);
 	switch (i) {
         case 0: /* we found the IP number */
 		dns_answer = ipaddr;
@@ -253,7 +261,7 @@ dns_main(pcap_t *fp, myip_t *ip, myudp_t *udp, int udplen)
         case -1:	/* strange return code from dns_extract */
         default:	/* dunno */
 #if(DEBUG_DNS == 1)
-		printf("\tdns_extract() return %08lx\n", i);
+		printf("\tdns_extract() return %08x\n", i);
 		print_data(udp->udp_data, swap16(udp->udp_length));
 #endif /* DEBUG_DNS == 1 */
 		return;

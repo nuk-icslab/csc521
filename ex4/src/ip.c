@@ -12,10 +12,10 @@
  ****** IP Utilities
  ******/
 
-unsigned short
+uint16_t
 ip_checksum(myip_t *ip)
 {
-	unsigned short	oldchksum, newchksum;
+	uint16_t	oldchksum, newchksum;
 
 	oldchksum = ip->ip_chksum;
 	ip->ip_chksum = 0;
@@ -29,7 +29,7 @@ ip_checksum(myip_t *ip)
  */
 
 void
-ip_main(pcap_t *fp, unsigned char *pkt, int len)
+ip_main(pcap_t *fp, uint8_t *pkt, int len)
 {
 	myeth_t		*eth = (myeth_t *) pkt;
 	myip_t		*ip = (myip_t *) eth->data;;
@@ -39,9 +39,9 @@ ip_main(pcap_t *fp, unsigned char *pkt, int len)
 	char		dstip[BUFLEN_IP];
 
 #if(DEBUG_CHECKSUM == 1)
-	unsigned short int	chk = ip_checksum(ip);;
+	uint16_t	chk = ip_checksum(ip);;
 #else
-	unsigned short int	chk = 0;
+	uint16_t chk = 0;
 #endif /* DEBUG_CHECKSUM */
 
 #if(DEBUG_IP >= 1 || DEBUG_CHECKSUM == 1)
@@ -78,12 +78,12 @@ ip_send(pcap_t *fp, myethip_t *pkt, int ipdatalen)
 {
 	int		iplen = ipdatalen + 20;
 	myeth_t	*eth = (myeth_t *) pkt;
-	unsigned char	*dstip;
+	uint8_t	*dstip;
 
 	pkt->eth_type = ETH_IP;
 	pkt->ip_verhlen = verhlen(4, 5);
 	pkt->ip_servicetype = 0;
-	pkt->ip_length = swap16((unsigned short) iplen);
+	pkt->ip_length = swap16((uint16_t) iplen);
 	pkt->ip_identification = pkt->ip_fragoff = 0;
 	if(pkt->ip_ttl == 0) pkt->ip_ttl = 255;
 	pkt->ip_chksum = 0;

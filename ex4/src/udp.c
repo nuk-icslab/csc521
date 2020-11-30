@@ -9,18 +9,18 @@
  ******
  ******/
 
-unsigned short
+uint16_t
 udp_checksum(myipudp_t *udpip)
 {
-	unsigned short	oldchksum, newchksum;
-	unsigned short	*srcip2, *dstip2;
-	unsigned long	sum;
+	uint16_t	oldchksum, newchksum;
+	uint16_t	*srcip2, *dstip2;
+	uint32_t	sum;
 	int				udplen;
 
 	udplen = swap16(udpip->udp_length);
 	/* checksum: pseudo header */
-	srcip2 = (unsigned short *) udpip->ip_srcip;
-	dstip2 = (unsigned short *) udpip->ip_dstip;
+	srcip2 = (uint16_t *) udpip->ip_srcip;
+	dstip2 = (uint16_t *) udpip->ip_dstip;
 	sum = swap16(*srcip2) + swap16(*(srcip2 + 1))
 		+ swap16(*dstip2) + swap16(*(dstip2 + 1)) + 0x11 + udplen;
 	sum = (sum >> 16) + (sum & 0xffff);
@@ -28,7 +28,7 @@ udp_checksum(myipudp_t *udpip)
 
 	/* checksum: udp packet */
 	oldchksum = udpip->udp_chksum;
-	udpip->udp_chksum = swap16((unsigned short) sum);
+	udpip->udp_chksum = swap16((uint16_t) sum);
 	newchksum = checksum((char *)&udpip->udp_srcport, udplen);
 	udpip->udp_chksum = oldchksum;
 
@@ -39,13 +39,13 @@ void
 udp_main(pcap_t *fp, myip_t *ip, int len)
 {
 #if(DEBUG_CHECKSUM == 1)
-	unsigned short int	chk = udp_checksum((myipudp_t *) ip);
+	uint16_t int	chk = udp_checksum((myipudp_t *) ip);
 #else
-	unsigned short int	chk = 0;
+	uint16_t	chk = 0;
 #endif /* DEBUG_CHECKSUM */
 	myudp_t				*udp = (myudp_t *) ip->data;
 	int					udplen = len - hlen(ip) * 4;
-	unsigned short int	srcport, dstport;
+	uint16_t	srcport, dstport;
 
 	srcport = swap16(udp->udp_srcport);
 	dstport = swap16(udp->udp_dstport);
@@ -55,7 +55,7 @@ udp_main(pcap_t *fp, myip_t *ip, int len)
 		dstport, udplen, (int) udp->udp_chksum, chk);
 #endif /* DEBUG_UDP == 1 || DEBUG_CHECKSUM == 1*/
 #if(DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_UDP_DUMP == 1)
-		print_data((unsigned char *)udp, udplen);
+		print_data((uint8_t *)udp, udplen);
 #endif /* DEBUG_UDP_DUMP */
 
 	if(srcport == 53 || srcport == 997) {
@@ -64,8 +64,8 @@ udp_main(pcap_t *fp, myip_t *ip, int len)
 }
 
 void
-udp_send(pcap_t *fp, unsigned short srcport, unsigned long dstip,
-		unsigned short dstport, char *data, int len)
+udp_send(pcap_t *fp, uint16_t srcport, uint32_t dstip,
+		uint16_t dstport, char *data, int len)
 {
 	myethip_t	pktbuf, *pkt;
 	myudp_t		*udp;
@@ -90,7 +90,7 @@ udp_send(pcap_t *fp, unsigned short srcport, unsigned long dstip,
 	ip_addrstr(pkt->ip_dstip, NULL), (int)dstport, udplen, udp->udp_chksum);
 #endif /* DEBUG_UDP */
 #if(DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_UDP_DUMP == 1)
-		print_data((unsigned char *)udp, udplen);
+		print_data((uint8_t *)udp, udplen);
 #endif /* DEBUG_UDP_DUMP */
 	ip_send(fp, pkt, udplen);
 }

@@ -5,7 +5,7 @@
 
 typedef struct {
 	ipaddr_t		ip;
-	unsigned char	eth[6];
+	uint8_t	eth[6];
 } ipethaddr_t;
 
 ipethaddr_t		arptable[MAX_ARPIP_N];
@@ -15,8 +15,8 @@ int			arptable_n = 0;
  * arptable_existed()
  */
 
-unsigned char *
-arptable_existed(unsigned char *ipaddr)
+uint8_t *
+arptable_existed(uint8_t *ipaddr)
 {
 	int		i;
 	ipaddr_t		ip;
@@ -32,7 +32,7 @@ arptable_existed(unsigned char *ipaddr)
  */
 
 void
-arptable_add(unsigned char *ip, unsigned char *eth)
+arptable_add(uint8_t *ip, uint8_t *eth)
 {
 #if(DEBUG_ARPCACHE == 1)
 	char		bufip[BUFLEN_IP], bufeth[BUFLEN_ETH];
@@ -41,7 +41,8 @@ arptable_add(unsigned char *ip, unsigned char *eth)
 		ip_addrstr(ip, bufip), eth_macaddr(eth, bufeth));
 #endif /* DEBUG_ARPCACHE == 1 */
 
-	arptable_n = (++arptable_n) % MAX_ARPIP_N;
+	arptable_n++;
+	arptable_n %= MAX_ARPIP_N;
 	arptable[arptable_n].ip = *((ipaddr_t *) ip);
 	memcpy(arptable[arptable_n].eth, eth, 6);
 }

@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include "common.h"
 #include "arp.h"
+#include <string.h>
 
-unsigned char	ethbroadcast[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-unsigned char	ethnull[] = {0, 0, 0, 0, 0, 0};
+uint8_t	ethbroadcast[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+uint8_t	ethnull[] = {0, 0, 0, 0, 0, 0};
 
 /*
  * Tosend Queue with 1 Buffer (Pending for ARP)
@@ -18,7 +19,7 @@ ipaddr_t	tosend_ip = 0;
  */
 
 void
-arp_request(pcap_t *fp, unsigned char *ip)
+arp_request(pcap_t *fp, uint8_t *ip)
 {
 	myetharp_t		pkt;
 	
@@ -38,7 +39,7 @@ arp_request(pcap_t *fp, unsigned char *ip)
 	setip(pkt.arp_dstip, ip);
 	memset(pkt.padding, 0, ARP_PADDING);
 	
-	if(pcap_sendpacket(fp, (unsigned char *) &pkt, sizeof(pkt)) != 0) {
+	if(pcap_sendpacket(fp, (uint8_t *) &pkt, sizeof(pkt)) != 0) {
         	fprintf(stderr,"\nError sending: %s\n", pcap_geterr(fp));
 	}
 #if(DEBUG_ARP_REQUEST == 1)
@@ -51,7 +52,7 @@ arp_request(pcap_t *fp, unsigned char *ip)
  */
 
 void
-arp_reply(pcap_t *fp, unsigned char *dsteth, unsigned char *dstip)
+arp_reply(pcap_t *fp, uint8_t *dsteth, uint8_t *dstip)
 {
 	myetharp_t		pkt;
 
@@ -70,7 +71,7 @@ arp_reply(pcap_t *fp, unsigned char *dsteth, unsigned char *dstip)
 	setip(pkt.arp_dstip, dstip);
 	memset(pkt.padding, 0, 18);
 	
-	if(pcap_sendpacket(fp, (unsigned char *) &pkt, sizeof(pkt)) != 0) {
+	if(pcap_sendpacket(fp, (uint8_t *) &pkt, sizeof(pkt)) != 0) {
         	fprintf(stderr,"\nError sending: %s\n", pcap_geterr(fp));
 	}
 #if(DEBUG_ARP_REPLY == 1)
@@ -83,17 +84,15 @@ arp_reply(pcap_t *fp, unsigned char *dsteth, unsigned char *dstip)
  */
  
 void
-arp_main(pcap_t *fp, unsigned char *pkt, int len)
+arp_main(pcap_t *fp, uint8_t *pkt, int len)
 {
-	myeth_t			*eth;
 	myetharp_t		*arp;
-	unsigned char	*ethaddr;
+	uint8_t	*ethaddr;
 #if(DEBUG_ARP == 1)	
 	char			srceth[BUFLEN_ETH], srcip[BUFLEN_IP];
 	char			dsteth[BUFLEN_ETH], dstip[BUFLEN_IP];
 #endif /* DEBUG_ARP */
 	
-	eth = (myeth_t *) pkt;
 	arp = (myetharp_t *) pkt;
 
 #if(DEBUG_ARP == 1)
@@ -120,10 +119,10 @@ arp_main(pcap_t *fp, unsigned char *pkt, int len)
 		if(ismyip(arp->arp_dstip))
 			arptable_add(arp->arp_srcip, arp->arp_srceth);
 		if(tosend_len > 0) {
-			if((ethaddr = arptable_existed((unsigned char *) &tosend_ip)) != NULL)
+			if((ethaddr = arptable_existed((uint8_t *) &tosend_ip)) != NULL)
 		   		arp_resend(fp, ethaddr);
 			else
-				arp_request(fp, (unsigned char *) &tosend_ip);
+				arp_request(fp, (uint8_t *) &tosend_ip);
 		}
 		break;
 
@@ -140,12 +139,12 @@ arp_main(pcap_t *fp, unsigned char *pkt, int len)
 
 
 void
-arp_resend(pcap_t *fp, unsigned char *eth)
+arp_resend(pcap_t *fp, uint8_t *eth)
 {
 	myethip_t	*pkt = &tosend_packet;
 
 	memcpy(pkt->eth_dst, eth, 6);
-	if(pcap_sendpacket(fp, (unsigned char *) pkt, tosend_len) != 0) {
+	if(pcap_sendpacket(fp, (uint8_t *) pkt, tosend_len) != 0) {
 		fprintf(stderr,"\nError sending: %s\n", pcap_geterr(fp));
 	}
 	tosend_len = 0;
@@ -157,9 +156,9 @@ arp_resend(pcap_t *fp, unsigned char *eth)
  */
 
 void
-arp_send(pcap_t *fp, myethip_t *pkt, unsigned char *dstip, int iplen)
+arp_send(pcap_t *fp, myethip_t *pkt, uint8_t *dstip, int iplen)
 {
-	unsigned char	*eth;
+	uint8_t	*eth;
 	int				len;
 
 	len = iplen + 14;
@@ -167,15 +166,15 @@ arp_send(pcap_t *fp, myethip_t *pkt, unsigned char *dstip, int iplen)
 	if((eth = arptable_existed(dstip)) != NULL) {
 		/* Send directly if MAC available */
 		memcpy(pkt->eth_dst, eth, 6);
-		if(pcap_sendpacket(fp, (unsigned char *) pkt, len) != 0) {
+		if(pcap_sendpacket(fp, (uint8_t *) pkt, len) != 0) {
         		fprintf(stderr,"\nError sending: %s\n", pcap_geterr(fp));
 		}
 	} else {
 		/* Put to the queue and reqeust ARP if MAC unavilable */
 		tosend_ip = *((ipaddr_t *) dstip);
 		tosend_len = len;
-		memcpy((unsigned char *) &tosend_packet, pkt, len);
-		arp_request(fp, (unsigned char *) &tosend_ip);
+		memcpy((uint8_t *) &tosend_packet, pkt, len);
+		arp_request(fp, (uint8_t *) &tosend_ip);
 	}
 }
 
