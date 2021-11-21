@@ -1,5 +1,16 @@
-*
-!.gitignore
-!*.c
-!*.h
-!Makefile
+# Configuration of VSCode
+.vscode
+
+# Executable of every lab
+ex1/testprog
+ex1/testrecv
+ex1/testsend
+
+ex2/build
+ex2/ex2
+
+ex3/build
+ex3/ex3
+
+ex3/build
+ex3/ex3
