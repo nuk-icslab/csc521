@@ -10,6 +10,10 @@ static void capture_callback(unsigned char *arg,
                              const struct pcap_pkthdr *header,
                              const unsigned char *content);
 
+/**
+ * mypcap_getdevice() - Interactively ask user what interface to use
+ * If defn is non zero, will select desired interface
+ **/
 int mypcap_getdevice(unsigned int defn, char *devname) {
   pcap_if_t *alldevs, *d;
   unsigned int selected_dev, dev_cnt = 0;
@@ -25,7 +29,9 @@ int mypcap_getdevice(unsigned int defn, char *devname) {
   if (defn > 0) {
     selected_dev = defn;
   } else {
-    /* Print the list */
+    /*
+     * Print the list of avaliable interfaces
+     */
     printf("Device list:\n");
     for (d = alldevs; d; d = d->next) {
       printf("%d. %s\n", ++dev_cnt, d->name);
@@ -37,9 +43,14 @@ int mypcap_getdevice(unsigned int defn, char *devname) {
       }
     }
 
+    /*
+     * If there's no avaliable interface, abort and free the resources
+     */
     if (dev_cnt == 0) {
       fprintf(stderr, "No interfaces found!\n");
-      /* Free the device list */
+      /*
+       * Free the resources of the device list
+       */
       pcap_freealldevs(alldevs);
       return MYPCAP_ERR;
     }
@@ -53,16 +64,24 @@ int mypcap_getdevice(unsigned int defn, char *devname) {
     printf("\nInterface number out of range.\n");
     return MYPCAP_ERR;
   } else {
-    /* Jump to the selected adapter */
+    /*
+     * Jump to the selected interface
+     */
     for (d = alldevs; selected_dev - 1 > 0; d = d->next, selected_dev--)
       ;
     strcpy(devname, d->name);
   }
-  /* Free the device list */
+  /*
+   * Free the resources of the device list
+   */
   pcap_freealldevs(alldevs);
   return 0;
 }
 
+/**
+ * mypcap_open() - Open a capture interface and initialize necessary resources
+ * The capture interface will be put into non-blocking mode
+ */
 mypcap_t *mypcap_open(char *devname, char *errbuf) {
   mypcap_t *p = (mypcap_t *)calloc(1, sizeof(mypcap_t));
   p->plist = NULL;
@@ -89,6 +108,10 @@ mypcap_t *mypcap_open(char *devname, char *errbuf) {
   return p;
 }
 
+/**
+ * mypcap_add_prot() - Register a protocol handler of the upper layer with
+ * specified ethertype
+ */
 int mypcap_add_prot(mypcap_t *p, uint16_t eth_type, mypcap_handler callback) {
   mypcap_prot_t *new_prot;
   new_prot = (mypcap_prot_t *)calloc(1, sizeof(mypcap_prot_t));
@@ -104,6 +127,11 @@ int mypcap_add_prot(mypcap_t *p, uint16_t eth_type, mypcap_handler callback) {
 
   return 0;
 }
+
+/**
+ * mypcap_proc() - Process all of the packets in the capture buffer.
+ * The detailed procedure to deal the packets is in capture_callback()
+ */
 int mypcap_proc(mypcap_t *p) {
   /*
    * Process all of the packet in the capture buffer.
@@ -119,6 +147,12 @@ int mypcap_proc(mypcap_t *p) {
 
   return pkt_cnt;
 }
+
+/**
+ * mypcap_send() - Send out an Ethernet frame with the given Ethernet header
+ * and payloads. The frame will be padded with '\0' to meet the minimal length
+ * of the Ethernet frame.
+ */
 int mypcap_send(mypcap_t *p, eth_hdr_t eth_hdr, uint8_t *payload,
                 int payload_len) {
   uint8_t buf[MAX_CAP_LEN];
@@ -132,8 +166,10 @@ int mypcap_send(mypcap_t *p, eth_hdr_t eth_hdr, uint8_t *payload,
   memcpy(buf, &eth_hdr, hdr_len);
   memcpy(buf + hdr_len, payload, payload_len);
   if (pktlen < MIN_ETH_LEN) {
-    // Padding the packet so that the length of the packet meets the minimal
-    // requirement of Ethernet frame
+    /*
+     * Padding the packet so that the length of the packet meets the minimal
+     * requirement of Ethernet frame
+     */
     memset(buf + pktlen, 0, MIN_ETH_LEN - pktlen);
     pktlen = MIN_ETH_LEN;
   }
@@ -158,6 +194,10 @@ int mypcap_send(mypcap_t *p, eth_hdr_t eth_hdr, uint8_t *payload,
   return 0;
 }
 
+/**
+ * mypcap_close() - Close the capture interface and release all of the
+ * resources.
+ */
 void mypcap_close(mypcap_t *p) {
   mypcap_prot_t *d, *tmp;
 
@@ -180,6 +220,13 @@ void mypcap_close(mypcap_t *p) {
   return;
 }
 
+/**
+ * capture_callback() - The main body to handle received packets.
+ * The Ethernet frame header of arrived packets will be parsed.
+ * The payload of packets will be distributed based on their ethertype.
+ * The handler of the upper layer won't be able to see the content of the
+ * Ethernet header.
+ */
 static void capture_callback(unsigned char *arg,
                              const struct pcap_pkthdr *header,
                              const unsigned char *pkt_data) {

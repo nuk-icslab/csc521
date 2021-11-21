@@ -7,27 +7,42 @@
 #include "common.h"
 #include "mypcap.h"
 
-/******
- ****** main_proc() - the main thread
- ******/
-
+/**
+ * main_proc() - The main body of this lab
+ **/
 int main_proc(mypcap_t *p) {
   int key;
   char buf[MAX_LINEBUF];
   ipaddr_t ip;
 
 #if (FG_ARP_SEND_REQUEST == 1)
+  /*
+   * Send ARP request to given default IP address
+   */
   arp_request(p, NULL);
 #endif /* FG_ARP_REQUEST */
 
   while (1) {
+    /*
+     * Proccess packets in the capture buffer
+     */
     if (mypcap_proc(p) == -1) {
       break;
     }
-    /* key pressed? */
+
+    /*----------------------------------*
+     * Other works can be inserted here *
+     *----------------------------------*/
+
+    /*
+     * If key is not pressed, continue to next loop
+     */
     if (!readready()) {
       continue;
     }
+    /*
+     * If user pressed enter, exit the program
+     */
     if ((key = fgetc(stdin)) == '\n') {
       break;
     }
@@ -35,7 +50,7 @@ int main_proc(mypcap_t *p) {
     if (fgets(buf, MAX_LINEBUF, stdin) == NULL) {
       break;
     }
-    if ((ip = my_inet_addr(buf)) == 0) {
+    if ((ip = retrieve_ip_addr(buf)) == 0) {
       printf("Invalid IP (Enter to exit)\n");
     } else {
       arp_request(p, (unsigned char *)&ip);
@@ -44,10 +59,6 @@ int main_proc(mypcap_t *p) {
 
   return 0;
 }
-
-/****
- **** MAIN ENTRY
- ****/
 
 int main(int argc, char *argv[]) {
   char devname[MAX_LINEBUF], errbuf[PCAP_ERRBUF_SIZE];

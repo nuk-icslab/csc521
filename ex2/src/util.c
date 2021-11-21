@@ -6,18 +6,13 @@
 
 #include "common.h"
 
-/******
- ****** Utilities
- ******/
-
 #if (FG_NATIVE_CYGWIN == 1)
 #include <sys/select.h>
 
-/*
- * readready() - check whether read ready for given file descriptor
- *	. return non-negative if ready, 0 if not ready, negative on errors
- */
-
+/**
+ * readready() - check whether read ready for standard input
+ * return non-negative if ready, 0 if not ready, negative on errors
+ **/
 int readready() {
   fd_set map;
   int fd = 0; /* stdin */
@@ -40,10 +35,9 @@ int readready() {
 }
 #endif /* FG_NATIVE_CYGWIN */
 
-/*
- * time2decstr()
- */
-
+/**
+ * time2decstr() - Convert a time_t structure to a human-readable string.
+ **/
 char *time2decstr(time_t t) {
   static char buf[20 + 1];
 
@@ -52,11 +46,10 @@ char *time2decstr(time_t t) {
   return buf;
 }
 
-/*
- * my_inet_addr()
- */
-
-ipaddr_t my_inet_addr(char *ip) {
+/**
+ * retrieve_ip_addr() - Retrieve an IP address from the standard input.
+ **/
+ipaddr_t retrieve_ip_addr(char *ip) {
   int n0, n1, n2, n3;
   ipaddr_t ret;
   unsigned char *p;
@@ -71,9 +64,8 @@ ipaddr_t my_inet_addr(char *ip) {
 }
 
 /*
- * ip_addrstr()
+ * ip_addrstr() - Convert a binary IP address to a human-readable string.
  */
-
 char *ip_addrstr(uint8_t *ip, char *buf) {
   static char ipbuf[BUFLEN_IP];
 
@@ -83,9 +75,8 @@ char *ip_addrstr(uint8_t *ip, char *buf) {
 }
 
 /*
- * eth_macaddr()
+ * eth_macaddr() - Convert a binary MAC address to a human-readable string.
  */
-
 char *eth_macaddr(const uint8_t *a, char *buf) {
   static char ethbuf[BUFLEN_ETH];
 
@@ -96,9 +87,8 @@ char *eth_macaddr(const uint8_t *a, char *buf) {
 }
 
 /*
- * print_ip()
+ * print_ip() - Print a human-readable IP address from binary format.
  */
-
 void print_ip(uint8_t *ip, char *endmsg) {
   int i;
 
@@ -110,9 +100,8 @@ void print_ip(uint8_t *ip, char *endmsg) {
 }
 
 /*
- * print_data()
+ * print_data() - Print the content of a binary buffer with fixed bytes-per-row
  */
-
 void print_data(const uint8_t *data, int len) {
   int i;
 
@@ -124,7 +113,6 @@ void print_data(const uint8_t *data, int len) {
 }
 
 /*
- * swap16()
- * Swap the two bytes in a 16-bits long integer.
+ * swap16() - Swap the two bytes in a 16-bits long integer.
  */
 uint16_t swap16(uint16_t x) { return (x << 8) | (x >> 8); }

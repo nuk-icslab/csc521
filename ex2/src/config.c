@@ -1,7 +1,16 @@
 #include "common.h"
 
-uint8_t myethaddr[] = {0x54, 0x27, 0x1e, 0x66, 0x59, 0xdb};
+/*
+ * The MAC address of your interface
+ */
+uint8_t myethaddr[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-uint8_t myipaddr[] = {192, 168, 0, 146};
+/*
+ * The IP address of your interface
+ */
+uint8_t myipaddr[] = {192, 168, 0, 10};
 
+/*
+ * The default IP address to send ARP requests to
+ */
 uint8_t defarpip[] = {192, 168, 0, 1};

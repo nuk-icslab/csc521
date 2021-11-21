@@ -7,13 +7,14 @@
 #include "mypcap.h"
 
 const uint8_t eth_broadcast_addr[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-
 const uint8_t eth_null_addr[] = {0, 0, 0, 0, 0, 0};
 
-/*
- * arp_request() - send a ARP request for <IP> address
- */
+static const char *arp_op_str(uint16_t op);
+static void arp_dump(myarp_t *arp);
 
+/**
+ * arp_request() - Send a ARP request for <IP> address
+ **/
 void arp_request(mypcap_t *p, uint8_t *ip) {
   eth_hdr_t eth_hdr;
   myarp_t pkt;
@@ -35,6 +36,7 @@ void arp_request(mypcap_t *p, uint8_t *ip) {
 
 #if (DEBUG_ARP_REQUEST == 1)
   printf("arp_request() to %s\n", ip_addrstr(ip, NULL));
+  arp_dump(&pkt);
 #endif /* DEBUG_ARP_REQUEST */
 
   if (mypcap_send(p, eth_hdr, (uint8_t *)&pkt, sizeof(pkt)) != 0) {
@@ -42,10 +44,9 @@ void arp_request(mypcap_t *p, uint8_t *ip) {
   }
 }
 
-/*
- * arp_reply() - reply MY hardware address
- */
-
+/**
+ * arp_reply() - Reply the configured hardware address
+ **/
 void arp_reply(mypcap_t *p, uint8_t *dsteth, uint8_t *dstip) {
   eth_hdr_t eth_hdr;
   myarp_t pkt;
@@ -73,22 +74,16 @@ void arp_reply(mypcap_t *p, uint8_t *dsteth, uint8_t *dstip) {
   }
 }
 
+/**
+ * arp_main() - The handler for incoming APR packets
+ **/
 void arp_main(mypcap_t *p, uint8_t *pkt, unsigned int len) {
   myarp_t *arp;
-  char srceth[BUFLEN_ETH], srcip[BUFLEN_IP];
-  char dsteth[BUFLEN_ETH], dstip[BUFLEN_IP];
 
   arp = (myarp_t *)pkt;
 
 #if (DEBUG_ARP == 1)
-  printf(
-      "ARP Eth=%04x/%d, IP=%04x/%d, Op=%04x\n"
-      "\tFrom %s (%s)\n"
-      "\tTo   %s (%s)\n",
-      (int)arp->ethtype, (int)arp->ethlen, (int)arp->iptype, (int)arp->iplen,
-      (int)arp->op, eth_macaddr(arp->srceth, srceth),
-      ip_addrstr(arp->srcip, srcip), eth_macaddr(arp->dsteth, dsteth),
-      ip_addrstr(arp->dstip, dstip));
+  arp_dump(arp);
 #endif /* DEBUG_ARP */
 
   /* ARP request to My IP: reply it */
@@ -106,4 +101,34 @@ void arp_main(mypcap_t *p, uint8_t *pkt, unsigned int len) {
       printf("unknown ARP opcode\n");
 #endif /* DEBUG_ARP */
   }
+}
+
+/**
+ * arp_op_str() - Convert the operation code to human-readable string
+ **/
+static const char *arp_op_str(uint16_t op) {
+  switch (op) {
+    case ARP_OP_REPLY:
+      return "Reply";
+    case ARP_OP_REQUEST:
+      return "Request";
+    default:
+      return "Unknown";
+  }
+}
+
+/**
+ * arp_dump() - Format output the content of ARP packet
+ **/
+static void arp_dump(myarp_t *arp) {
+  char srceth[BUFLEN_ETH], srcip[BUFLEN_IP];
+  char dsteth[BUFLEN_ETH], dstip[BUFLEN_IP];
+  printf(
+      "ARP Eth=%04x/%d, IP=%04x/%d, Op=%04x(%s)\n"
+      "\tFrom %s (%s)\n"
+      "\tTo   %s (%s)\n",
+      swap16(arp->ethtype), arp->ethlen, swap16(arp->iptype), arp->iplen,
+      swap16(arp->op), arp_op_str(arp->op), eth_macaddr(arp->srceth, srceth),
+      ip_addrstr(arp->srcip, srcip), eth_macaddr(arp->dsteth, dsteth),
+      ip_addrstr(arp->dstip, dstip));
 }
