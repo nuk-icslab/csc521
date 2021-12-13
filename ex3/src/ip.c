@@ -1,92 +1,101 @@
+#include "ip.h"
+
 #include <stdio.h>
 #include <string.h>
 
-#include "common.h"
-#include "ip.h"
 #include "arp.h"
+#include "common.h"
 #include "icmp.h"
+#include "mypcap.h"
 
-/******
- ****** IP Utilities
- ******/
+/**
+ * ip_checksum() - The utility to calculate the checksum of IP header.
+ **/
+uint16_t ip_checksum(myip_hdr_t *ip) {
+  uint16_t oldchksum, newchksum;
 
-uint16_t
-ip_checksum(myip_t *ip)
-{
-	uint16_t	oldchksum, newchksum;
-
-	oldchksum = ip->ip_chksum;
-	ip->ip_chksum = 0;
-	newchksum = checksum((char*) ip, hlen(ip)*4);
-	ip->ip_chksum = oldchksum;
-	return newchksum;
+  oldchksum = ip->chksum;
+  ip->chksum = 0;
+  newchksum = checksum((uint8_t *)ip, hlen(ip) * 4);
+  ip->chksum = oldchksum;
+  return newchksum;
 }
 
 /*
- *
+ * ip_main() - The handler to process the packets from the bottom layer.
  */
+void ip_main(mypcap_t *p, uint8_t *pkt, int len) {
+  myip_hdr_t *ip_hdr;
 
-void
-ip_main(pcap_t *fp, uint8_t *pkt, int len)
-{
-	myeth_t		*eth = (myeth_t *) pkt;
-	myip_t		*ip = (myip_t *) eth->data;;
-	int			n = swap16(ip->ip_length);
+  ip_hdr = (myip_hdr_t *)pkt;
 
-	char		srcip[BUFLEN_IP];
-	char		dstip[BUFLEN_IP];
+  int ip_len = swap16(ip_hdr->length);
 
-#if(DEBUG_CHECKSUM == 1)
-	uint16_t	chk = ip_checksum(ip);;
+  char srcip[BUFLEN_IP];
+  char dstip[BUFLEN_IP];
+
+#if (DEBUG_CHECKSUM == 1)
+  uint16_t chk = ip_checksum(ip_hdr);
+  ;
 #else
-	uint16_t	chk = 0;
+  uint16_t chk = 0;
 #endif /* DEBUG_CHECKSUM */
 
-#if(DEBUG_IP >= 1 || DEBUG_CHECKSUM == 1)
-	printf("IP from %s to %s: Proto=%d, Len=%d, chksum=%04x/%04x\n",
-		ip_addrstr(ip->ip_srcip, srcip), ip_addrstr(ip->ip_dstip, dstip),
-		(int) ip->ip_protocol, n, (int) chk, (int) ip->ip_chksum);
+#if (DEBUG_IP >= 1 || DEBUG_CHECKSUM == 1)
+  printf("IP from %s to %s: Proto=%d, Len=%d, chksum=%04x/%04x\n",
+         ip_addrstr(ip_hdr->srcip, srcip), ip_addrstr(ip_hdr->dstip, dstip),
+         (int)ip_hdr->protocol, ip_len, (int)chk, (int)ip_hdr->chksum);
 #endif /* DEBUG_IP == 1 || DEBUG_CHECKSUM == 1 */
 
-	switch(ip->ip_protocol) {
-	case 0x01: /* ICMP */
-		icmp_main(fp, ip, n);
-		break;
-#if(DEBUG_IP == 2)
-	case 0x06: /* TCP */
-	case 0x17: /* UDP */
-	default:
-		printf("Unsupported IP protocol: %d\n", (int) ip->ip_protocol);
+  switch (ip_hdr->protocol) {
+    case ICMP_IP_PROTO: /* ICMP */
+      icmp_main(p, pkt, len);
+      break;
+#if (DEBUG_IP == 2)
+    case 0x06: /* TCP */
+    case 0x17: /* UDP */
+    default:
+      printf("Unsupported IP protocol: %d\n", (int)ip->ip_protocol);
 #endif /* DEBUG_IP == 1 */
-	}
+  }
 }
 
 /*
- * ip_send()
+ * ip_send() - Send out a IP packet to the bottom layer with the payload from
+ * the upper layer.
  */
+void ip_send(mypcap_t *p, myip_param_t *ip_param, uint8_t *payload,
+             int payload_len) {
+  int hdr_len = sizeof(myip_hdr_t);
+  int pkt_len = payload_len + hdr_len;
+  myip_hdr_t ip_hdr;
+  uint8_t pkt[MAX_CAP_LEN];
+  uint8_t *dstip;
 
-void
-ip_send(pcap_t *fp, myethip_t *pkt, int ipdatalen)
-{
-	int		iplen = ipdatalen + 20;
-	myeth_t	*eth = (myeth_t *) pkt;
-	uint8_t	*dstip;
+  /* Fill up the header of IP */
+  ip_hdr.verhlen = verhlen(IP_VERSION, IP_MIN_HLEN);
+  ip_hdr.servicetype = 0;
+  ip_hdr.length = swap16((uint16_t)pkt_len);
+  ip_hdr.identification = ip_hdr.fragoff = 0;
+  if (ip_hdr.ttl == 0) ip_hdr.ttl = IP_MAX_TTL;
+  ip_hdr.protocol = ip_param->protocol;
+  ip_hdr.chksum = 0;
+  SET_IP(ip_hdr.srcip, myipaddr);
+  SET_IP(ip_hdr.dstip, ip_param->dstip);
 
-	pkt->eth_type = ETH_IP;
-	pkt->ip_verhlen = verhlen(4, 5);
-	pkt->ip_servicetype = 0;
-	pkt->ip_length = swap16((uint16_t) iplen);
-	pkt->ip_identification = pkt->ip_fragoff = 0;
-	if(pkt->ip_ttl == 0) pkt->ip_ttl = 255;
-	pkt->ip_chksum = 0;
-	setip(pkt->ip_srcip, myipaddr);
-	pkt->ip_chksum = ip_checksum((myip_t *) eth->data);
-	dstip = ismynet(pkt->ip_dstip) ? pkt->ip_dstip : myrouterip;
-	arp_send(fp, pkt, dstip, iplen);
-#if(DEBUG_IP == 1)
-	printf("ip_send (dstip=%s, proto=%d, iplen=%d) to ",
-				ip_addrstr(pkt->ip_dstip, NULL),
-				pkt->ip_protocol, iplen);
-	print_ip(dstip, "\n");
+  /* Re-calculate the checksum */
+  ip_hdr.chksum = ip_checksum(&ip_hdr);
+
+  /* Construct the packet */
+  memcpy(pkt, &ip_hdr, hdr_len);
+  memcpy(pkt + hdr_len, payload, payload_len);
+
+  /* Send to dafault gateway if destnation is not in the same network */
+  dstip = IS_MY_NET(ip_hdr.dstip) ? ip_hdr.dstip : myrouterip;
+#if (DEBUG_IP == 1)
+  printf("ip_send (dstip=%s, proto=%d, iplen=%d) to ",
+         ip_addrstr(ip_hdr.dstip, NULL), ip_hdr.protocol, ip_hdr.length);
+  print_ip(dstip, "\n");
 #endif /* DEBUG_IP == 1 */
+  arp_send(p, dstip, ETH_IP, pkt, pkt_len);
 }
