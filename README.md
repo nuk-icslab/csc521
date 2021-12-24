@@ -39,4 +39,3 @@ This repository is the laboratories and exercises of the course CSC521 at the Na
 
 - Refactor IP layer and UDP/TCP layer to reduce the coupling from upper-layers
 - Enlarge the tosend_queue to avoid overwriting on sending packets
-- Append address-sanitizer in Makefiles

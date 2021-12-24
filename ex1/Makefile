@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-g -O0 -Wall
-LDFLAGS=-lpcap
+CFLAGS=-g -O0 -Wall -fsanitize=address
+LDFLAGS=-lpcap -fsanitize=address
 
 testprog: testprog.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
