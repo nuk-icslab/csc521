@@ -1,52 +1,34 @@
 #ifndef __ICMP_H__
 #define __ICMP_H__
 
-#include <pcap/pcap.h>
 #include "ip.h"
+#include "mypcap.h"
 
-#define ICMP_PADDING	18
+/*============================*
+ ***** Protocol Constants *****
+ *============================*/
+#define ICMP_IP_PROTO 0x01
+#define ICMP_TYPE_ECHO_REQ 0x08
+#define ICMP_TYPE_ECHO_REP 0x00
+#define ICMP_TYPE_DST_UN 0x03
+#define ICMP_TYPE_REDIR 0x05
+#define ICMP_TYPE_TIME_EXCD 0x0b
 
-/***
- ***	ICMP
- ***/
-
+/*=========================*
+ ***** Protocol Format *****
+ *=========================*/
 typedef struct {
-	uint8_t	icmp_type;
-	uint8_t	icmp_code;
-	uint16_t	icmp_chksum;
-	uint16_t	icmp_id;
-	uint16_t	icmp_seq;
-	char		icmp_data[1];
-} myicmp_t;
+  uint8_t type;
+  uint8_t code;
+  uint16_t chksum;
+  uint16_t id;
+  uint16_t seq;
+} myicmp_hdr_t;
 
-typedef struct {
-	uint8_t	eth_dst[6];
-	uint8_t	eth_src[6];
-	uint16_t	eth_type;
-
-	uint8_t	ip_verhlen;
-	uint8_t	ip_servicetype;
-	uint16_t	ip_length;
-
-	uint16_t	ip_identification;
-	uint16_t	ip_fragoff;
-
-	uint8_t	ip_ttl;
-	uint8_t	ip_protocol;
-	uint16_t	ip_chksum;
-
-	uint8_t	ip_srcip[4];
-	uint8_t	ip_dstip[4];
-
-	uint8_t	icmp_type;
-	uint8_t	icmp_code;
-	uint16_t	icmp_chksum;
-	uint16_t	icmp_id;
-	uint16_t	icmp_seq;
-	char		padding[ICMP_PADDING];
-} myethicmp_t;
-
-extern void icmp_main(pcap_t *fp, myip_t *ip, int len);
-extern void icmp_ping(pcap_t *fp, myethip_t *pkt, uint8_t *dstip);
+/*========================*
+ ***** Public Methods *****
+ *========================*/
+extern void icmp_main(mypcap_t *p, uint8_t *pkt, int len);
+extern void icmp_ping(mypcap_t *p, uint8_t *dstip);
 
 #endif /* __ICMP_H__ */

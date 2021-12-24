@@ -1,119 +1,135 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#include <pcap/pcap.h>
-#include <time.h>
 #include <errno.h>
+#include <pcap/pcap.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
 
-// For libpcap that doesn't support WinPcap
+/*=======================*
+ ***** Control Flags *****
+ ========================*/
+
+#define FG_NATIVE_CYGWIN 1
+
+#define FG_ARP_SEND_REQUEST 1
+#define FG_ICMP_SEND_REQUEST 1
+#define FG_DNS_DO_PING 1
+
+#define DEBUG_PACKET 0
+#define DEBUG_PACKET_DUMP 0
+
+#define DEBUG_ARP 1
+#define DEBUG_ARP_REQUEST 1
+#define DEBUG_ARP_REPLY 1
+#define DEBUG_ARP_DUMP 0
+#define DEBUG_ARPCACHE 1
+
+#define DEBUG_CHECKSUM 0
+#define DEBUG_IP 0
+#define DEBUG_IP_DUMP 0
+
+#define DEBUG_ICMP 1
+
+#define DEBUG_UDP 1
+#define DEBUG_UDP_DUMP 1
+
+#define DEBUG_DNS 1
+#define DEBUG_DNS_DUMP 1
+
+#define DEBUG_TCP 0
+#define DEBUG_TCP_DUMP 0
+
+/*
+ * For libpcap that doesn't support WinPcap
+ */
 #ifndef PCAP_OPENFLAG_PROMISCUOUS
 #define PCAP_OPENFLAG_PROMISCUOUS 1
 #endif
 
-#define FG_NATIVE_CYGWIN	1
+/*===========================*
+ ***** Common Parameters *****
+ *===========================*/
 
-#define FG_ARP_SEND_REQUEST	0
-#define FG_ICMP_SEND_REQUEST	0
-#define FG_DNS_DO_PING		1
+/*
+ * The buffer length of MAC address string
+ */
+#define BUFLEN_ETH 18
 
-/***
- ***	Flags
- ***/
+/*
+ * The buffer length of IP address string
+ */
+#define BUFLEN_IP 16
 
-#define DEBUG_PACKET		0
-#define DEBUG_PACKET_DUMP	0
+/*
+ * How many bytes should print_data() show
+ */
+#define MAX_DUMP_LEN 80
 
-#define DEBUG_ARP		0
-#define DEBUG_ARP_REQUEST	0
-#define DEBUG_ARP_REPLY		0
-#define DEBUG_ARP_DUMP		0
-#define DEBUG_ARPCACHE		1
+/*
+ * How many bytes per row should print_data() show
+ */
+#define MAX_LINE_LEN 16
 
-#define DEBUG_CHECKSUM		0
+/*
+ * The maximum length of a string buffer
+ */
+#define MAX_LINEBUF 256
 
-#define DEBUG_IP		0
-#define DEBUG_IP_DUMP		0
+/*=================================================*
+ ***** Assigned Numbers and Protocol Prameters *****
+ *=================================================*/
+#define ETH_IP 0x0008
+#define ETH_ARP 0x0608
 
-#define DEBUG_ICMP		1
+#define ETH_ADDR_LEN 6
+#define IPV4_ADDR_LEN 4
 
-#define DEBUG_UDP		1
-#define DEBUG_UDP_DUMP		0
+typedef uint32_t ipaddr_t;
+typedef uint8_t byte;
+typedef uint16_t word;
+typedef uint32_t longword;
 
-#define DEBUG_DNS		1
-#define DEBUG_DNS_DUMP		1
+#define COPY_ETH_ADDR(dst, src) (memcpy((dst), (src), ETH_ADDR_LEN))
+#define COPY_IPV4_ADDR(dst, src) (memcpy((dst), (src), IPV4_ADDR_LEN))
 
-#define DEBUG_TCP		0
-#define DEBUG_TCP_DUMP		0
+/*===============================*
+ ***** Global Configurations *****
+ *===============================*/
+extern uint8_t myethaddr[ETH_ADDR_LEN];
+extern uint8_t myipaddr[IPV4_ADDR_LEN];
+extern uint8_t myrouterip[IPV4_ADDR_LEN];
+extern uint8_t mynetmask[IPV4_ADDR_LEN];
 
-#define MAX_CAP_LEN		1514
-#define MAX_DUMP_PKT		5
+extern uint8_t defarpip[IPV4_ADDR_LEN];
+extern uint8_t defpingip[IPV4_ADDR_LEN];
+extern uint8_t defdnsip[IPV4_ADDR_LEN];
 
-#define BUFLEN_ETH		18
-#define BUFLEN_IP		16
-#define MAX_DUMP_LEN		80
-#define MAX_LINE_LEN		16
-#define MAX_LINEBUF		256
+/*===================*
+ ***** Utilities *****
+ *===================*/
 
-#define MAX_DNS_TRY		3
-#define DEF_DNS_SLEEP		2	/* seconds */
-#define DEF_DNS_UDP_SRCPORT	0x3456
-#define DEF_DNS_ID		0x5501
+extern int readready();
+extern char *time2decstr(time_t t);
+extern ipaddr_t retrieve_ip_addr(char *ip);
+extern char *ip_addrstr(uint8_t *ip, char *buf);
+extern char *eth_macaddr(const uint8_t *a, char *buf);
 
-/***
- ***	Assigned Numbers and Prameters
- ***/
- 
-#define ETH_IP		0x0008
-#define ETH_ARP		0x0608
+extern void print_ip(uint8_t *ip, char *msg);
+extern void print_data(const uint8_t *data, int len);
+extern char *trimright(char *str);
 
-typedef struct {
-	uint8_t	eth_dst[6];
-	uint8_t	eth_src[6];
-	uint16_t	eth_type;
-	uint8_t	data[1];
-} myeth_t;
+extern uint16_t swap16(uint16_t s);
+extern uint32_t swap32(uint32_t val);
+extern uint16_t checksum(uint8_t *ptr, int len);
 
-typedef uint32_t	ipaddr_t;
+#define GET_IP(ipaddr) (*((ipaddr_t *)(ipaddr)))
+#define SET_IP(dip, sip) (*((ipaddr_t *)(dip)) = *((ipaddr_t *)(sip)))
+#define IS_MY_IP(ipaddr) ((GET_IP(ipaddr)) == GET_IP(myipaddr))
 
-/******
- ******
- ******/
-
-extern uint8_t	myethaddr[6];
-extern uint8_t	myipaddr[4];
-extern uint8_t	myrouterip[4];
-extern uint8_t	mynetmask[4];
-
-extern uint8_t	defarpip[4];
-extern uint8_t	defpingip[4];
-
-#define getip(ipaddr)	(*((ipaddr_t *)(ipaddr)))
-#define setip(dip, sip)	(*((ipaddr_t *) (dip)) = *((ipaddr_t *) (sip)))
-#define ismyip(ipaddr)	((getip(ipaddr)) == getip(myipaddr))
-
-#define getnetid(ip)	((*((ipaddr_t *)(ip))) & (*((ipaddr_t *) mynetmask)))
-#define ismynet(ip)	((getnetid(ip)) == getnetid(myipaddr))
-
-/******
- ******	utilities
- ******/
-
-extern void		pkt_main(pcap_t *fp, struct pcap_pkthdr	*header, uint8_t *pkt_data);
-extern int		pkt_loop(pcap_t *fp, int loop);
-
-extern int		readready();
-extern char		*time2decstr(time_t t);
-extern ipaddr_t		my_inet_addr(char *ip);
-extern char		*ip_addrstr(uint8_t *ip, char *buf);
-extern char		*eth_macaddr(const uint8_t *a, char *buf);
-
-extern void		print_ip(uint8_t *ip, char *msg);
-extern void		print_data(const uint8_t *data, int len);
-extern char		*trimright(char *str);
-
-extern uint16_t	swap16(uint16_t s);
-extern uint32_t	swap32(uint32_t val);
-extern uint16_t	checksum(char *ptr, int len);
+#define GET_NET_ID(ip) ((*((ipaddr_t *)(ip))) & (*((ipaddr_t *)mynetmask)))
+#define IS_MY_NET(ip) ((GET_NET_ID(ip)) == GET_NET_ID(myipaddr))
 
 #endif /* __COMMON_H__ */

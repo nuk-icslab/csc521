@@ -1,91 +1,105 @@
+#include "tcp.h"
+
 #include <stdio.h>
 #include <string.h>
 
 #include "common.h"
-#include "tcp.h"
 
 /******
  ******
  ******/
 
-char *
-tcp_flagstr(uint8_t flags)
-{
-	static char	buf[7];
+#if (DEBUG_TCP == 1)
+static char *tcp_flagstr(uint8_t flags) {
+  static char buf[7];
 
-	buf[0] = ((flags & TCP_FG_URT) != 0) ? 'U' : '-';
-	buf[1] = ((flags & TCP_FG_ACK) != 0) ? 'A' : '-';
-	buf[2] = ((flags & TCP_FG_PSH) != 0) ? 'P' : '-';
-	buf[3] = ((flags & TCP_FG_RST) != 0) ? 'R' : '-';
-	buf[4] = ((flags & TCP_FG_SYN) != 0) ? 'S' : '-';
-	buf[5] = ((flags & TCP_FG_FIN) != 0) ? 'F' : '-';
-	buf[6] = '\0';
-	return buf;
+  buf[0] = ((flags & TCP_FG_URT) != 0) ? 'U' : '-';
+  buf[1] = ((flags & TCP_FG_ACK) != 0) ? 'A' : '-';
+  buf[2] = ((flags & TCP_FG_PSH) != 0) ? 'P' : '-';
+  buf[3] = ((flags & TCP_FG_RST) != 0) ? 'R' : '-';
+  buf[4] = ((flags & TCP_FG_SYN) != 0) ? 'S' : '-';
+  buf[5] = ((flags & TCP_FG_FIN) != 0) ? 'F' : '-';
+  buf[6] = '\0';
+  return buf;
+}
+#endif  // DEBUG_TCP
+
+static uint16_t tcp_checksum(myip_param_t *ip_param, mytcp_hdr_t *tcp_hdr,
+                             int tcplen) {
+  uint16_t oldchksum, newchksum;
+  uint16_t *srcip2, *dstip2;
+  uint32_t sum;
+
+  /* checksum: pseudo header */
+  srcip2 = (uint16_t *)ip_param->srcip;
+  dstip2 = (uint16_t *)ip_param->dstip;
+  sum = swap16(*srcip2) + swap16(*(srcip2 + 1)) + swap16(*dstip2) +
+        swap16(*(dstip2 + 1)) + 6 + tcplen;
+  sum = (sum >> 16) + (sum & 0xffff);
+  sum = (sum >> 16) + (sum & 0xffff);
+
+  /* checksum: tcp packet */
+  oldchksum = tcp_hdr->chksum;
+  tcp_hdr->chksum = swap16((uint16_t)sum);
+  newchksum = checksum((uint8_t *)&tcp_hdr->srcport, tcplen);
+  tcp_hdr->chksum = oldchksum;
+
+  /* final */
+  return newchksum;
 }
 
-uint16_t
-tcp_checksum(myiptcp_t *tcpip, int len)
-{
-	uint16_t	oldchksum, newchksum;
-	uint16_t	*srcip2, *dstip2;
-	uint32_t	sum;
-	int				tcplen;
+void tcp_main(mypcap_t *p, uint8_t *pkt, int len) {
+  myip_hdr_t *ip_hdr;
+  mytcp_hdr_t *tcp_hdr;
+  int ip_hdr_len;
 
-	tcplen = (len > 0) ? len : (swap16(tcpip->ip_length) - hlen(tcpip) * 4);
-	/* checksum: pseudo header */
-	srcip2 = (uint16_t *) tcpip->ip_srcip;
-	dstip2 = (uint16_t *) tcpip->ip_dstip;
-	sum = swap16(*srcip2) + swap16(*(srcip2 + 1))
-		+ swap16(*dstip2) + swap16(*(dstip2 + 1)) + 6 + tcplen;
-	sum = (sum >> 16) + (sum & 0xffff);
-	sum = (sum >> 16) + (sum & 0xffff);
+  ip_hdr = (myip_hdr_t *)pkt;
+  ip_hdr_len = hlen(ip_hdr) * 4;
+  pkt += ip_hdr_len;
+  len -= ip_hdr_len;
 
-	/* checksum: tcp packet */
-	oldchksum = tcpip->tcp_chksum;
-	tcpip->tcp_chksum = swap16((uint16_t) sum);
-	newchksum = checksum((char*) &tcpip->tcp_srcport, tcplen);
-	tcpip->tcp_chksum = oldchksum;
+  tcp_hdr = (mytcp_hdr_t *)pkt;
 
-	/* final */
-	return newchksum;
-}
+#if (DEBUG_TCP == 1)
+  myip_param_t ip_param;
+  int tcp_len;
+  COPY_IPV4_ADDR(ip_param.srcip, ip_hdr->srcip);
+  COPY_IPV4_ADDR(ip_param.dstip, ip_hdr->dstip);
+  ip_param.protocol = ip_hdr->protocol;
+  tcp_len = len - hlen(ip_hdr) * 4;
+  uint16_t chk = tcp_checksum(&ip_param, tcp_hdr, tcp_len);
 
-void
-tcp_main(pcap_t *fp, myip_t *ip, int len)
-{
-#if(DEBUG_TCP == 1)
-	uint16_t int	chk = tcp_checksum((myiptcp_t *) ip);
-	mytcp_t				*tcp = (mytcp_t *) ip->data;
-	int					tcplen = len - hlen(ip) * 4;
-	uint16_t int	srcport, dstport;
+  uint16_t srcport, dstport;
 
-	srcport = swap16(tcp->tcp_srcport);
-	dstport = swap16(tcp->tcp_dstport);
+  srcport = swap16(tcp_hdr->srcport);
+  dstport = swap16(tcp_hdr->dstport);
 
-	printf("TCP %s: %d->%d, Len=%d, chksum=%04x/%04x\n",  tcp_flagstr(tcp->tcp_flags),
-		srcport, dstport, tcplen, (int) tcp->tcp_chksum, chk);
-#endif /* DEBUG_TCP == 1 || DEBUG_CHECKSUM == 1 */
-#if(DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_TCP_DUMP == 1)
-		print_data((uint8_t *)ip, len);
+  printf("TCP %s: %d->%d, Len=%d, chksum=%04x/%04x\n",
+         tcp_flagstr(tcp_hdr->flags), srcport, dstport, tcp_len,
+         (int)tcp_hdr->chksum, chk);
+#endif /* DEBUG_TCP */
+#if (DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_TCP_DUMP == 1)
+  print_data((uint8_t *)ip, len);
 #endif /* DEBUG_TCP_DUMP */
 }
 
-void
-tcp_send(pcap_t *fp, uint16_t srcport, uint32_t dstip,
-		uint16_t dstport, char *data, int len)
-{
-	myethip_t	pktbuf, *pkt;
-	myiptcp_t	*tcp;
-	
-	pkt = &pktbuf;
-	pkt->ip_protocol = 0x06; /* TCP */
-	setip(pkt->ip_dstip, &dstip);
-	setip(pkt->ip_srcip, myipaddr);
+void tcp_send(mypcap_t *p, mytcp_param_t tcp_param, uint8_t *payload,
+              int payload_len) {
+  int hdr_len = sizeof(mytcp_hdr_t);
+  int pkt_len = payload_len + hdr_len;
+  uint8_t pkt[pkt_len];
+  mytcp_hdr_t *tcp_hdr = (mytcp_hdr_t *)pkt;
+  myip_param_t *ip_param;
 
-	tcp = (myiptcp_t *)(((myeth_t *) pkt)->data);
-	tcp->tcp_srcport = swap16(srcport);
-	tcp->tcp_dstport = swap16(dstport);
-	memcpy(tcp->tcp_data, data, len);
-	tcp->tcp_chksum = tcp_checksum(tcp, len + 20);
-	ip_send(fp, pkt, len + 20);
+  ip_param = &tcp_param.ip;
+  ip_param->protocol = 0x06; /* TCP */
+  COPY_IPV4_ADDR(ip_param->srcip, myipaddr);
+
+  tcp_hdr->srcport = swap16(tcp_param.srcport);
+  tcp_hdr->dstport = swap16(tcp_param.dstport);
+  tcp_hdr->chksum = tcp_checksum(ip_param, tcp_hdr, pkt_len);
+
+  memcpy(pkt + sizeof(mytcp_hdr_t), payload, payload_len);
+
+  ip_send(p, ip_param, pkt, pkt_len);
 }

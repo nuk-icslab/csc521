@@ -1,181 +1,216 @@
-#include <stdio.h>
-#include "common.h"
 #include "arp.h"
-#include <string.h>
 
-uint8_t	ethbroadcast[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-uint8_t	ethnull[] = {0, 0, 0, 0, 0, 0};
+#include <stdio.h>
+
+#include "common.h"
+#include "ip.h"
+
+const uint8_t eth_broadcast_addr[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+const uint8_t eth_null_addr[] = {0, 0, 0, 0, 0, 0};
+
+static const char *arp_op_str(uint16_t op);
+static void arp_dump(myarp_t *arp);
 
 /*
  * Tosend Queue with 1 Buffer (Pending for ARP)
  */
- 
-myethip_t	tosend_packet;
-int			tosend_len = 0;
-ipaddr_t	tosend_ip = 0;
 
-/*
- * arp_request() - send a ARP request for <IP> address
- */
+struct {
+  uint8_t payload[MAX_CAP_LEN];
+  int len;
+  ipaddr_t dst_ip;
+  uint16_t eth_type;
+} tosend_queue = {.len = 0, .dst_ip = 0, .eth_type = 0};
 
-void
-arp_request(pcap_t *fp, uint8_t *ip)
-{
-	myetharp_t		pkt;
-	
-	if(ip == NULL) ip = defarpip;
-	memcpy(pkt.eth_dst, ethbroadcast, 6);
-	memcpy(pkt.eth_src, myethaddr, 6);
-	pkt.eth_type = ETH_ARP;
+/**
+ * arp_request() - Send a ARP request for <IP> address
+ **/
+void arp_request(mypcap_t *p, uint8_t *ip) {
+  eth_hdr_t eth_hdr;
+  myarp_t pkt;
 
-	pkt.arp_ethtype = 0x0100;
-	pkt.arp_iptype = ETH_IP;
-	pkt.arp_ethlen = 6;
-	pkt.arp_iplen = 4;
-	pkt.arp_op = 0x0100;
-	memcpy(pkt.arp_srceth, myethaddr, 6);
-	setip(pkt.arp_srcip, myipaddr);
-	memcpy(pkt.arp_dsteth, ethnull, 6);	
-	setip(pkt.arp_dstip, ip);
-	memset(pkt.padding, 0, ARP_PADDING);
-	
-	if(pcap_sendpacket(fp, (uint8_t *) &pkt, sizeof(pkt)) != 0) {
-        	fprintf(stderr,"\nError sending: %s\n", pcap_geterr(fp));
-	}
-#if(DEBUG_ARP_REQUEST == 1)
-	printf("arp_request() to %s\n", ip_addrstr(ip, NULL));
+  if (ip == NULL) ip = defarpip;
+  COPY_ETH_ADDR(eth_hdr.eth_dst, eth_broadcast_addr);
+  COPY_ETH_ADDR(eth_hdr.eth_src, myethaddr);
+  eth_hdr.eth_type = ETH_ARP;
+
+  pkt.ethtype = ARP_ETH_TYPE;
+  pkt.iptype = ETH_IP;
+  pkt.ethlen = ETH_ADDR_LEN;
+  pkt.iplen = IPV4_ADDR_LEN;
+  pkt.op = ARP_OP_REQUEST;
+  COPY_ETH_ADDR(pkt.srceth, myethaddr);
+  COPY_IPV4_ADDR(pkt.srcip, myipaddr);
+  COPY_ETH_ADDR(pkt.dsteth, eth_null_addr);
+  COPY_IPV4_ADDR(pkt.dstip, ip);
+
+#if (DEBUG_ARP_REQUEST == 1)
+  printf("arp_request() to %s\n", ip_addrstr(ip, NULL));
+  arp_dump(&pkt);
 #endif /* DEBUG_ARP_REQUEST */
+
+  if (mypcap_send(p, eth_hdr, (uint8_t *)&pkt, sizeof(pkt)) != 0) {
+    fprintf(stderr, "Failed to send ARP request.\n");
+  }
 }
 
-/*
- * arp_reply() - reply MY hardware address
- */
+/**
+ * arp_reply() - Reply the configured hardware address
+ **/
+void arp_reply(mypcap_t *p, uint8_t *dsteth, uint8_t *dstip) {
+  eth_hdr_t eth_hdr;
+  myarp_t pkt;
 
-void
-arp_reply(pcap_t *fp, uint8_t *dsteth, uint8_t *dstip)
-{
-	myetharp_t		pkt;
+  COPY_ETH_ADDR(eth_hdr.eth_dst, dsteth);
+  COPY_ETH_ADDR(eth_hdr.eth_src, myethaddr);
+  eth_hdr.eth_type = ETH_ARP;
 
-	memcpy(pkt.eth_dst, dsteth, 6);
-	memcpy(pkt.eth_src, myethaddr, 6);
-	pkt.eth_type = ETH_ARP;
+  pkt.ethtype = ARP_ETH_TYPE;
+  pkt.iptype = ETH_IP;
+  pkt.ethlen = ETH_ADDR_LEN;
+  pkt.iplen = IPV4_ADDR_LEN;
+  pkt.op = ARP_OP_REPLY;
+  COPY_ETH_ADDR(pkt.srceth, myethaddr);
+  COPY_IPV4_ADDR(pkt.srcip, myipaddr);
+  COPY_ETH_ADDR(pkt.dsteth, dsteth);
+  COPY_IPV4_ADDR(pkt.dstip, dstip);
 
-	pkt.arp_ethtype = 0x0100;
-	pkt.arp_iptype = ETH_IP;
-	pkt.arp_ethlen = 6;
-	pkt.arp_iplen = 4;
-	pkt.arp_op = 0x0200;
-	memcpy(pkt.arp_srceth, myethaddr, 6);
-	setip(pkt.arp_srcip, myipaddr);
-	memcpy(pkt.arp_dsteth, dsteth, 6);
-	setip(pkt.arp_dstip, dstip);
-	memset(pkt.padding, 0, 18);
-	
-	if(pcap_sendpacket(fp, (uint8_t *) &pkt, sizeof(pkt)) != 0) {
-        	fprintf(stderr,"\nError sending: %s\n", pcap_geterr(fp));
-	}
-#if(DEBUG_ARP_REPLY == 1)
-	printf("arp_reply() to %s\n", ip_addrstr(dstip, NULL));
+#if (DEBUG_ARP_REPLY == 1)
+  printf("arp_reply() to %s\n", ip_addrstr(dstip, NULL));
 #endif /* DEBUG_ARP_REPLY */
+
+  if (mypcap_send(p, eth_hdr, (uint8_t *)&pkt, sizeof(pkt)) != 0) {
+    fprintf(stderr, "Failed to send ARP reply.\n");
+  }
 }
 
-/*
- * arp_main() - prpocessing a receiving ARP packet
- */
- 
-void
-arp_main(pcap_t *fp, uint8_t *pkt, int len)
-{
-	myetharp_t		*arp;
-	uint8_t	*ethaddr;
-#if(DEBUG_ARP == 1)	
-	char			srceth[BUFLEN_ETH], srcip[BUFLEN_IP];
-	char			dsteth[BUFLEN_ETH], dstip[BUFLEN_IP];
+/**
+ * arp_main() - The handler for incoming APR packets
+ **/
+void arp_main(mypcap_t *p, uint8_t *pkt, unsigned int len) {
+  myarp_t *arp;
+
+  arp = (myarp_t *)pkt;
+
+#if (DEBUG_ARP == 1)
+  arp_dump(arp);
 #endif /* DEBUG_ARP */
-	
-	arp = (myetharp_t *) pkt;
 
-#if(DEBUG_ARP == 1)
-	printf("ARP Eth=%04x/%d, IP=%04x/%d, Op=%04x\n"
-		"\tFrom %s (%s)\n"
-		"\tTo   %s (%s)\n",
-		(int) arp->arp_ethtype, (int) arp->arp_ethlen,
-		(int) arp->arp_iptype,  (int) arp->arp_iplen,
-		(int) arp->arp_op,
-		eth_macaddr(arp->arp_srceth, srceth), ip_addrstr(arp->arp_srcip, srcip),
-		eth_macaddr(arp->arp_dsteth, dsteth), ip_addrstr(arp->arp_dstip, dstip));
+  /* ARP request to My IP: reply it */
+  switch (arp->op) {
+    case ARP_OP_REQUEST: /* ARP Request */
+      if (memcmp(arp->dstip, myipaddr, IPV4_ADDR_LEN) == 0)
+        arp_reply(p, arp->srceth, arp->srcip);
+      break;
+
+    case ARP_OP_REPLY: /* ARP Reply */
+      if (IS_MY_IP(arp->dstip)) arptable_add(arp->srcip, arp->srceth);
+      if (tosend_queue.len > 0) {
+        if ((GET_IP(arp->srcip)) == tosend_queue.dst_ip) {
+          arp_resend(p);
+        } else {
+          printf("Resend ARP request to %s\n",
+                 ip_addrstr((uint8_t *)&tosend_queue.dst_ip, NULL));
+          /* If doesn't get response from desired IP,
+             resend the ARP request */
+          arp_request(p, (uint8_t *)&tosend_queue.dst_ip);
+        }
+      }
+      break;
+
+#if (DEBUG_ARP == 1)
+    default:
+      printf("unknown ARP opcode\n");
 #endif /* DEBUG_ARP */
-#if(DEBUG_PACKET_DUMP == 0 && DEBUG_ARP_DUMP == 1)
-		print_data(pkt, len);
-#endif /* DEBUG_ARP_DUMP */
-	/* ARP request to My IP: reply it */
-	switch(arp->arp_op) {
-	case 0x0100: /* ARP Request */
-		if(ismyip(arp->arp_dstip))
-			arp_reply(fp, arp->arp_srceth, arp->arp_srcip);
-		break;
-
-	case 0x0200: /* ARP Reply */
-		if(ismyip(arp->arp_dstip))
-			arptable_add(arp->arp_srcip, arp->arp_srceth);
-		if(tosend_len > 0) {
-			if((ethaddr = arptable_existed((uint8_t *) &tosend_ip)) != NULL)
-		   		arp_resend(fp, ethaddr);
-			else
-				arp_request(fp, (uint8_t *) &tosend_ip);
-		}
-		break;
-
-#if(DEBUG_ARP == 1)
-	default:
-		printf("unknown ARP opcode\n");
-#endif /* DEBUG_ARP */
-	}
+  }
 }
 
-/*
- * arp_resend() - send out the queued packet to the obtained MAC
- */
+/**
+ * arp_send() - Send out packets from upper layer to the specificed destination
+ * IP address.
+ **/
+void arp_send(mypcap_t *p, uint8_t *dst_ip, uint16_t eth_type, uint8_t *payload,
+              int payload_len) {
+  uint8_t *eth_dst;
+  eth_hdr_t eth_hdr;
 
+  COPY_ETH_ADDR(eth_hdr.eth_src, myethaddr);
+  eth_hdr.eth_type = eth_type;
 
-void
-arp_resend(pcap_t *fp, uint8_t *eth)
-{
-	myethip_t	*pkt = &tosend_packet;
-
-	memcpy(pkt->eth_dst, eth, 6);
-	if(pcap_sendpacket(fp, (uint8_t *) pkt, tosend_len) != 0) {
-		fprintf(stderr,"\nError sending: %s\n", pcap_geterr(fp));
-	}
-	tosend_len = 0;
-	tosend_ip = 0;
+  if ((eth_dst = arptable_existed(dst_ip)) != NULL) {
+    /* Send directly if MAC available */
+    COPY_ETH_ADDR(eth_hdr.eth_dst, eth_dst);
+    if (mypcap_send(p, eth_hdr, payload, payload_len) != 0) {
+      fprintf(stderr, "Failed to send.\n");
+    }
+#if (DEBUG_ARP == 1)
+    printf("arp_send(): Packet sent to %s (%s) eth_type=%04x\n",
+           ip_addrstr(dst_ip, NULL), eth_macaddr(eth_dst, NULL),
+           swap16(eth_type));
+#if (DEBUG_ARP_DUMP == 1)
+    print_data(payload, payload_len);
+#endif  // DEBUG_ARP_DUMP == 1
+#endif  // DEBUG_ARP == 1
+  } else {
+#if (DEBUG_ARP == 1)
+    printf(
+        "arp_send(): MAC address of %s is unavailable. "
+        "The outgoing packet is queued.\n",
+        ip_addrstr(dst_ip, NULL));
+#endif
+    /* Put to the queue and reqeust ARP if MAC unavailable */
+    tosend_queue.dst_ip = GET_IP(dst_ip);
+    tosend_queue.len = payload_len;
+    tosend_queue.eth_type = eth_type;
+    memcpy((uint8_t *)&tosend_queue.payload, payload, payload_len);
+    arp_request(p, dst_ip);
+  }
 }
 
-/*
- * arp_send()
- */
+/**
+ * arp_resend() - Re-send the queued packet
+ **/
+void arp_resend(mypcap_t *p) {
+#if (DEBUG_ARP == 1)
+  printf(
+      "arp_resend(): Obtained the MAC address of %s. "
+      "Re-sending queued packets.\n",
+      ip_addrstr((uint8_t *)&tosend_queue.dst_ip, NULL));
+#endif
 
-void
-arp_send(pcap_t *fp, myethip_t *pkt, uint8_t *dstip, int iplen)
-{
-	uint8_t	*eth;
-	int				len;
+  arp_send(p, (uint8_t *)&tosend_queue.dst_ip, tosend_queue.eth_type,
+           tosend_queue.payload, tosend_queue.len);
 
-	len = iplen + 14;
-	memcpy(pkt->eth_src, myethaddr, 6);
-	if((eth = arptable_existed(dstip)) != NULL) {
-		/* Send directly if MAC available */
-		memcpy(pkt->eth_dst, eth, 6);
-		if(pcap_sendpacket(fp, (uint8_t *) pkt, len) != 0) {
-        		fprintf(stderr,"\nError sending: %s\n", pcap_geterr(fp));
-		}
-	} else {
-		/* Put to the queue and reqeust ARP if MAC unavilable */
-		tosend_ip = *((ipaddr_t *) dstip);
-		tosend_len = len;
-		memcpy((uint8_t *) &tosend_packet, pkt, len);
-		arp_request(fp, (uint8_t *) &tosend_ip);
-	}
+  tosend_queue.len = 0;
+  tosend_queue.dst_ip = 0;
 }
 
+/**
+ * arp_op_str() - Convert the operation code to human-readable string
+ **/
+static const char *arp_op_str(uint16_t op) {
+  switch (op) {
+    case ARP_OP_REPLY:
+      return "Reply";
+    case ARP_OP_REQUEST:
+      return "Request";
+    default:
+      return "Unknown";
+  }
+}
 
+/**
+ * arp_dump() - Format output the content of ARP packet
+ **/
+static void arp_dump(myarp_t *arp) {
+  char srceth[BUFLEN_ETH], srcip[BUFLEN_IP];
+  char dsteth[BUFLEN_ETH], dstip[BUFLEN_IP];
+  printf(
+      "ARP Eth=%04x/%d, IP=%04x/%d, Op=%04x(%s)\n"
+      "\tFrom %s (%s)\n"
+      "\tTo   %s (%s)\n",
+      swap16(arp->ethtype), arp->ethlen, swap16(arp->iptype), arp->iplen,
+      swap16(arp->op), arp_op_str(arp->op), eth_macaddr(arp->srceth, srceth),
+      ip_addrstr(arp->srcip, srcip), eth_macaddr(arp->dsteth, dsteth),
+      ip_addrstr(arp->dstip, dstip));
+}
