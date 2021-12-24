@@ -9,55 +9,6 @@
 #include "mypcap.h"
 #include "tcp.h"
 
-// // [TODO] Remove pkt_main
-// void pkt_main(pcap_t *fp, struct pcap_pkthdr *header, uint8_t *pkt_data) {
-//   myeth_t *pkt = (myeth_t *)pkt_data;
-//   int pktlen = header->caplen;
-// #if (DEBUG_PACKET == 1)
-//   char addrsrc[BUFLEN_ETH], addrdst[BUFLEN_ETH];
-// #endif /* DEBUG_PACKET */
-
-// #if (DEBUG_PACKET == 1)
-//   /* print pkt timestamp and pkt len */
-//   printf("*%s %s=>%s (Type=%.2x%.2x/Len=%ld)\n",
-//   time2decstr(header->ts.tv_sec),
-//          eth_macaddr(pkt_data + 6, addrsrc), eth_macaddr(pkt_data, addrdst),
-//          pkt_data[12], pkt_data[13], header->len);
-// #endif /* DEBUG_PACKET */
-// #if (DEBUG_PACKET_DUMP == 1)
-//   print_data(pkt_data, pktlen);
-// #endif /* DEBUG_PACKET_DUMP */
-//   switch (pkt->eth_type) {
-//     case ETH_ARP:
-//       arp_main(fp, (uint8_t *)pkt_data, pktlen);
-//       break;
-//     case ETH_IP:
-//       ip_main(fp, (uint8_t *)pkt_data, pktlen);
-//       break;
-//   }
-// }
-
-// // [TODO] Remove pkt_loop
-// int pkt_loop(pcap_t *fp, int loop) {
-//   int i, res;
-//   struct pcap_pkthdr *header;
-//   const uint8_t *pkt_data;
-
-//   /*---- Read the packets */
-//   for (i = 0; loop == 0 || i < loop; i++) {
-//     if ((res = pcap_next_ex(fp, &header, &pkt_data)) == -1) {
-//       fprintf(stderr, "Error reading the packets: %s\n", pcap_geterr(fp));
-//       return -1;
-//     }
-//     if (res > 0) pkt_main(fp, header, (uint8_t *)pkt_data);
-
-//     if (readready() != 0) break;
-//   }
-
-//   /*---- exit */
-//   return 0; /* expired */
-// }
-
 /**
  * main_proc() - the main thread
  **/
@@ -69,9 +20,14 @@ int main_proc(mypcap_t *p) {
 #if (FG_ARP_SEND_REQUEST == 1)
   arp_request(p, NULL);
 #endif /* FG_ARP_REQUEST */
+
+#if (FG_DNS_QUERY == 1)
+  ip = resolve(p, defdnsquery);
+  printf("%s\t%s\n", defdnsquery, ip_addrstr((uint8_t *)&ip, NULL));
 #if (FG_ICMP_SEND_REQUEST == 1)
-  icmp_ping(p, NULL);
-#endif /* FG_ICMP_SEND_REQUEST */
+  icmp_ping(p, (uint8_t *)&ip);
+#endif  // FG_ICMP_SEND_REQUEST
+#endif  // FG_DNS_QUERY
 
   /* Read the packets */
   while (1) {

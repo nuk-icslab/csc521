@@ -33,34 +33,6 @@ typedef struct {
   uint8_t data[1];
 } mytcp_hdr_t;
 
-// typedef struct {
-//   uint8_t ip_verhlen;
-//   uint8_t ip_servicetype;
-//   uint16_t ip_length;
-
-//   uint16_t ip_identification;
-//   uint16_t ip_fragoff;
-
-//   uint8_t ip_ttl;
-//   uint8_t ip_protocol;
-//   uint16_t ip_chksum;
-
-//   uint8_t ip_srcip[4];
-//   uint8_t ip_dstip[4];
-
-//   uint16_t tcp_srcport;
-//   uint16_t tcp_dstport;
-//   uint32_t tcp_seq;
-//   uint32_t tcp_ack;
-//   uint8_t tcp_hlen5;
-//   uint8_t tcp_flags;
-//   uint16_t tcp_window;
-//   uint16_t tcp_chksum;
-//   uint16_t tcp_urgent;
-//   uint8_t tcp_data[1460];
-//   /* 1500 - ip_header20 - tcp_header20 */
-// } myiptcp_t;
-
 typedef struct {
   uint16_t srcport;
   uint16_t dstport;

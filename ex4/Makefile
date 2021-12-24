@@ -8,8 +8,8 @@ TARGET_DIR=build
 
 # Configuration of compiler and linker
 CC=gcc
-CFLAGS=-g -O0 -Wall -I$(INCLUDE_DIR)
-LDFLAGS=-lpcap
+CFLAGS=-g -O0 -Wall -I$(INCLUDE_DIR) -fsanitize=address
+LDFLAGS=-lpcap -fsanitize=address
 
 # Find all of the .c files in SRC_DIR.
 # And convert the suffix to .o

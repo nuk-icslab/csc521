@@ -10,3 +10,4 @@ uint8_t defarpip[] = {10, 0, 208, 254};
 uint8_t defpingip[] = {140, 127, 208, 18};
 
 uint8_t defdnsip[] = {8, 8, 8, 8};
+char* defdnsquery = "www.csie.nuk.edu.tw";

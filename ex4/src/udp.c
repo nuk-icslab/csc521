@@ -12,25 +12,26 @@
  ******
  ******/
 
-uint16_t udp_checksum(myip_param_t *ip_param, myudp_hdr_t *udp_hdr) {
+static uint16_t udp_checksum(myip_param_t *ip_param, uint8_t *udp_pkt) {
+  myudp_hdr_t *udp_hdr = (myudp_hdr_t *)udp_pkt;
   uint16_t oldchksum, newchksum;
   uint16_t *srcip2, *dstip2;
   uint32_t sum;
-  int udplen;
+  int udp_len = swap16(udp_hdr->length);
 
-  udplen = swap16(udp_hdr->length);
   /* checksum: pseudo header */
   srcip2 = (uint16_t *)ip_param->srcip;
   dstip2 = (uint16_t *)ip_param->dstip;
-  sum = swap16(*srcip2) + swap16(*(srcip2 + 1)) + swap16(*dstip2) +
-        swap16(*(dstip2 + 1)) + ip_param->protocol + udplen;
+  sum = swap16(*srcip2) + swap16(*(srcip2 + 1));
+  sum += swap16(*dstip2) + swap16(*(dstip2 + 1));
+  sum += ip_param->protocol + udp_len;
   sum = (sum >> 16) + (sum & 0xffff);
   sum = (sum >> 16) + (sum & 0xffff);
 
   /* checksum: udp packet */
   oldchksum = udp_hdr->chksum;
   udp_hdr->chksum = swap16((uint16_t)sum);
-  newchksum = checksum((uint8_t *)&udp_hdr->srcport, udplen);
+  newchksum = checksum(udp_pkt, udp_len);
   udp_hdr->chksum = oldchksum;
 
   return newchksum;
@@ -55,7 +56,7 @@ void udp_main(mypcap_t *p, uint8_t *pkt, int len) {
   COPY_IPV4_ADDR(ip_param.srcip, ip_hdr->srcip);
   COPY_IPV4_ADDR(ip_param.dstip, ip_hdr->dstip);
   ip_param.protocol = ip_hdr->protocol;
-  uint16_t chk = udp_checksum(&ip_param, udp_hdr);
+  uint16_t chk = udp_checksum(&ip_param, pkt);
 #else
   uint16_t chk = 0;
 #endif /* DEBUG_CHECKSUM */
@@ -95,9 +96,10 @@ void udp_send(mypcap_t *p, myudp_param_t udp_param, uint8_t *payload,
   udp_hdr->srcport = swap16(udp_param.srcport);
   udp_hdr->dstport = swap16(udp_param.dstport);
   udp_hdr->length = swap16(pkt_len);
-  udp_hdr->chksum = udp_checksum(ip_param, udp_hdr);
 
   memcpy(pkt + sizeof(myudp_hdr_t), payload, payload_len);
+
+  udp_hdr->chksum = udp_checksum(ip_param, pkt);
 
 #if (DEBUG_UDP)
   printf("udp_send(): %d->%s:%d, Len=%d, chksum=%04x\n", (int)udp_param.srcport,

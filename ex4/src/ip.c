@@ -83,7 +83,7 @@ void ip_send(mypcap_t *p, myip_param_t *ip_param, uint8_t *payload,
   ip_hdr.servicetype = 0;
   ip_hdr.length = swap16((uint16_t)pkt_len);
   ip_hdr.identification = ip_hdr.fragoff = 0;
-  if (ip_hdr.ttl == 0) ip_hdr.ttl = IP_MAX_TTL;
+  ip_hdr.ttl = IP_MAX_TTL;
   ip_hdr.protocol = ip_param->protocol;
   ip_hdr.chksum = 0;
   SET_IP(ip_hdr.srcip, ip_param->srcip);

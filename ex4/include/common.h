@@ -14,8 +14,9 @@
 
 #define FG_NATIVE_CYGWIN 1
 
-#define FG_ARP_SEND_REQUEST 1
+#define FG_ARP_SEND_REQUEST 0
 #define FG_ICMP_SEND_REQUEST 1
+#define FG_DNS_QUERY 1
 #define FG_DNS_DO_PING 1
 
 #define DEBUG_PACKET 0
@@ -34,7 +35,7 @@
 #define DEBUG_ICMP 1
 
 #define DEBUG_UDP 1
-#define DEBUG_UDP_DUMP 1
+#define DEBUG_UDP_DUMP 0
 
 #define DEBUG_DNS 1
 #define DEBUG_DNS_DUMP 1
@@ -106,6 +107,7 @@ extern uint8_t mynetmask[IPV4_ADDR_LEN];
 extern uint8_t defarpip[IPV4_ADDR_LEN];
 extern uint8_t defpingip[IPV4_ADDR_LEN];
 extern uint8_t defdnsip[IPV4_ADDR_LEN];
+extern char *defdnsquery;
 
 /*===================*
  ***** Utilities *****

@@ -2,9 +2,41 @@
 
 This repository is the laboratories and exercises of the course CSC521 at the National University of Kaohsiung.
 
-### Focused Topics
+## Focused Topic
 
-- Lab1: the basic development of pcap library. Including list network interfaces, send packets and receive packets
-- Lab2: the implementation of address resolution protocol(ARP). Including request and reply
-- Lab3: [TBD]
-- Lab4: [TBD]
+### Lab1 - The basic development of pcap library
+
+- The building system
+- Listing network interfaces
+- Sending packets
+- Receiving packets
+
+### Lab2 - Link layer protocols
+
+- Address Resolution Protocol(ARP)
+- ARP request
+- ARP reply
+
+### Lab3 - Network layer protocols
+
+- Parital of Internet Protocol(IP)
+- Partial of Internet Control Message Protocol(ICMP)
+- ICMP echo request
+- ICMP echo reply
+
+### Lab4 - Transport layer protocols
+
+- User Datagram Protocol(UDP)
+- Partial of Transmission Contorl Protocl(TCP)
+- Partial of Domain Name System(DNS)
+- The complete DNS resolver
+
+## Dependency
+
+- libpcap
+
+## TODO
+
+- Refactor IP layer and UDP/TCP layer to reduce the coupling from upper-layers
+- Enlarge the tosend_queue to avoid overwriting on sending packets
+- Append address-sanitizer in Makefiles
