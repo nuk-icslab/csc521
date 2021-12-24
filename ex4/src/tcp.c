@@ -5,11 +5,10 @@
 
 #include "common.h"
 
-/******
- ******
- ******/
-
 #if (DEBUG_TCP == 1)
+/*
+ * tcp_flagstr() - Convert flags in TCP header to human-readable format
+ */
 static char *tcp_flagstr(uint8_t flags) {
   static char buf[7];
 
@@ -24,6 +23,9 @@ static char *tcp_flagstr(uint8_t flags) {
 }
 #endif  // DEBUG_TCP
 
+/*
+ * tcp_checksum() - Calculate checksum of TCP segment with IPv4 pseudo header
+ */
 static uint16_t tcp_checksum(myip_param_t *ip_param, uint8_t *pkt, int tcplen) {
   mytcp_hdr_t *tcp_hdr = (mytcp_hdr_t *)pkt;
   uint16_t oldchksum, newchksum;
@@ -49,6 +51,9 @@ static uint16_t tcp_checksum(myip_param_t *ip_param, uint8_t *pkt, int tcplen) {
   return newchksum;
 }
 
+/*
+ * tcp_main(): The main procedure for incoming TCP segments
+ */
 void tcp_main(mypcap_t *p, uint8_t *pkt, int len) {
   myip_hdr_t *ip_hdr;
   mytcp_hdr_t *tcp_hdr;

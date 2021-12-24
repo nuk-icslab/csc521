@@ -11,11 +11,10 @@ static ipaddr_t dns_answer = 0;
 
 /*
  * dns_unpack() - unpack a compressed domain name received from another host
- *	. Returns the number of bytes at src which should be skipped over.
- *	. Handles pointers to continuation domain names
- *	. Includes the NULL terminator in its length count.
+ * Returns the number of bytes at src which should be skipped over.
+ * Handles pointers to continuation domain names
+ * Includes the NULL terminator in its length count.
  */
-
 static word dns_unpack(byte *dst, byte *src, byte *buf) {
   int i, j, retval, labellen;
   byte *savesrc;
@@ -51,7 +50,6 @@ static word dns_unpack(byte *dst, byte *src, byte *buf) {
  * returns the appropriate status code and
  * if the ip number is available, copies it into mip
  */
-
 static int dns_extract(uint8_t *pkt, uint8_t *mip) {
   mydns_t *qp = (mydns_t *)pkt;
   word i, j, nans, rcode;
@@ -99,10 +97,9 @@ static int dns_extract(uint8_t *pkt, uint8_t *mip) {
   return (-1); /* answer not found */
 }
 
-/******
- ******
- ******/
-
+/*
+ * dns_qinit() - Initialize the question section
+ */
 static void dns_qinit(mydns_t *question) {
   question->header.flags = swap16(DFG_RD);
   question->header.qdcount = swap16(1);
@@ -115,7 +112,6 @@ static void dns_qinit(mydns_t *question) {
  * dns_packdom() - pack a regular text string into a packed domain name
  * Returns packeted length
  */
-
 static int dns_packdom(byte *dst, byte *src) {
   byte *p, *q, *savedst;
   int i;
@@ -157,7 +153,6 @@ static int dns_packdom(byte *dst, byte *src) {
  * dns_sendom() - put together a domain lookup packet and send it
  *	. uses port 53, num is used as identifier
  */
-
 static void dns_sendom(mypcap_t *p, char *mname, uint8_t *nameserver) {
   mydns_t question;
   byte namebuf[DOMSIZE];
@@ -201,7 +196,6 @@ static void dns_sendom(mypcap_t *p, char *mname, uint8_t *nameserver) {
  * Returns the IP of the machine record for future reference.
  * Returns 0 if name is unresolvable right now
  */
-
 ipaddr_t resolve(mypcap_t *p, char *name) {
   time_t now, later;
   longword ip_address;
@@ -227,10 +221,9 @@ ipaddr_t resolve(mypcap_t *p, char *name) {
   return (0);
 }
 
-/******
- ******
- ******/
-
+/*
+ * dns_main() - The main procedure to process incoming DNS message
+ */
 void dns_main(mypcap_t *p, myip_hdr_t *ip_hdr, uint8_t *pkt, int len) {
   int i;
   ipaddr_t ipaddr; /* returned ip */
@@ -256,7 +249,11 @@ void dns_main(mypcap_t *p, myip_hdr_t *ip_hdr, uint8_t *pkt, int len) {
     case 0: /* we found the IP number */
       dns_answer = ipaddr;
       break;
-    case 3:  /* name does not exist */
+    case 3: /* name does not exist */
+#if (DEBUG_DNS == 1)
+      printf("\tdns_extract() returnd that domain name not existed(%d)\n", i);
+#endif /* DEBUG_DNS == 1 */
+      break;
     case -1: /* strange return code from dns_extract */
     default: /* dunno */
 #if (DEBUG_DNS == 1)

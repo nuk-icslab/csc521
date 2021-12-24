@@ -8,10 +8,9 @@
 #include "dns.h"
 #include "ip.h"
 
-/******
- ******
- ******/
-
+/*
+ * udp_checksum() - Calculate checksum of UDP datagram with IPv4 pseudo header
+ */
 static uint16_t udp_checksum(myip_param_t *ip_param, uint8_t *udp_pkt) {
   myudp_hdr_t *udp_hdr = (myudp_hdr_t *)udp_pkt;
   uint16_t oldchksum, newchksum;
@@ -37,6 +36,9 @@ static uint16_t udp_checksum(myip_param_t *ip_param, uint8_t *udp_pkt) {
   return newchksum;
 }
 
+/*
+ * udp_main(): The main procedure for incoming UDP datagrams
+ */
 void udp_main(mypcap_t *p, uint8_t *pkt, int len) {
   myip_hdr_t *ip_hdr;
   myudp_hdr_t *udp_hdr;
@@ -81,6 +83,9 @@ void udp_main(mypcap_t *p, uint8_t *pkt, int len) {
   }
 }
 
+/*
+ * udp_send() - Send out UDP datagram with specified UDP port and IP addresse
+ */
 void udp_send(mypcap_t *p, myudp_param_t udp_param, uint8_t *payload,
               int payload_len) {
   int hdr_len = sizeof(myudp_hdr_t);
