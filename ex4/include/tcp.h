@@ -10,6 +10,7 @@
 /*============================*
  ***** Protocol Constants *****
  *============================*/
+#define IP_PROTO_TCP 0x06
 #define TCP_FG_URT 0x20
 #define TCP_FG_ACK 0x10
 #define TCP_FG_PSH 0x08

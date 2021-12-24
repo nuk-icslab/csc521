@@ -50,13 +50,13 @@ void ip_main(mypcap_t *p, uint8_t *pkt, int len) {
 #endif /* DEBUG_IP == 1 || DEBUG_CHECKSUM == 1 */
 
   switch (ip_hdr->protocol) {
-    case 0x01: /* ICMP */
+    case IP_PROTO_ICMP: /* 0x01 */
       icmp_main(p, pkt, len);
       break;
-    case 0x06: /* TCP */
+    case IP_PROTO_TCP: /* 0x06 */
       tcp_main(p, pkt, len);
       break;
-    case 0x11: /* UDP */
+    case IP_PROTO_UDP: /* 0x11 */
       udp_main(p, pkt, len);
       break;
 #if (DEBUG_IP == 2)

@@ -7,7 +7,7 @@
 /*============================*
  ***** Protocol Constants *****
  *============================*/
-#define ICMP_IP_PROTO 0x01
+#define IP_PROTO_ICMP 0x01
 #define ICMP_TYPE_ECHO_REQ 0x08
 #define ICMP_TYPE_ECHO_REP 0x00
 #define ICMP_TYPE_DST_UN 0x03

@@ -95,7 +95,7 @@ void udp_send(mypcap_t *p, myudp_param_t udp_param, uint8_t *payload,
   myip_param_t *ip_param;
 
   ip_param = &udp_param.ip;
-  ip_param->protocol = 0x11; /* UDP */
+  ip_param->protocol = IP_PROTO_UDP; /* 0x11 */
   COPY_IPV4_ADDR(ip_param->srcip, myipaddr);
 
   udp_hdr->srcport = swap16(udp_param.srcport);

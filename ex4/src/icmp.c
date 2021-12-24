@@ -101,7 +101,7 @@ void icmp_ping(mypcap_t *p, uint8_t *dstip) {
 #endif /* DEBUG_ICMP */
   SET_IP(ip_param.dstip, dstip);
   SET_IP(ip_param.srcip, myipaddr);
-  ip_param.protocol = ICMP_IP_PROTO; /* ICMP */
+  ip_param.protocol = IP_PROTO_ICMP; /* 0x01 */
 
   icmp_hdr->type = ICMP_TYPE_ECHO_REQ;
   icmp_hdr->code = 0;

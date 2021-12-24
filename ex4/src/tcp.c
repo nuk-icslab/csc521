@@ -98,7 +98,7 @@ void tcp_send(mypcap_t *p, mytcp_param_t tcp_param, uint8_t *payload,
   myip_param_t *ip_param;
 
   ip_param = &tcp_param.ip;
-  ip_param->protocol = 0x06; /* TCP */
+  ip_param->protocol = IP_PROTO_TCP; /* 0x06 */
   COPY_IPV4_ADDR(ip_param->srcip, myipaddr);
 
   tcp_hdr->srcport = swap16(tcp_param.srcport);
