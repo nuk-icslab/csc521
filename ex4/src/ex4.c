@@ -27,6 +27,14 @@ int main_proc(mypcap_t *p) {
 #if (FG_ICMP_SEND_REQUEST == 1)
   icmp_ping(p, (uint8_t *)&ip);
 #endif  // FG_ICMP_SEND_REQUEST
+#if (FG_TCP_SEND_SYN == 1)
+  mytcp_param_t tcp_param;
+  COPY_IPV4_ADDR(tcp_param.ip.dstip, (uint8_t *)&ip);
+  tcp_param.srcport = TCP_FILTER_PORT;
+  tcp_param.dstport = 80;
+
+  tcp_send(p, tcp_param, NULL, 0);
+#endif  // FG_TCP_SEND_SYN
 #endif  // FG_DNS_QUERY
 
   /* Read the packets */

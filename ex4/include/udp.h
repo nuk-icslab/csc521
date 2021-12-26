@@ -1,7 +1,13 @@
 #ifndef __UDP_H__
 #define __UDP_H__
 
+#include "dns.h"
 #include "ip.h"
+
+/*====================*
+ ***** Parameters *****
+ *====================*/
+#define UDP_FILTER_PORT DEF_DNS_UDP_SRCPORT
 
 /*============================*
  ***** Protocol Constants *****

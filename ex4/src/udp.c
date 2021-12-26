@@ -53,6 +53,10 @@ void udp_main(mypcap_t *p, uint8_t *pkt, int len) {
 
   assert(swap16(udp_hdr->length) == len);
 
+#if (DEBUG_UDP == 1 && DEBUG_UDP_FILTER == 1)
+  if (swap16(udp_hdr->dstport) != UDP_FILTER_PORT) return;
+#endif  // DEBUG_UDP == 1 && DEBUG_UDP_FILTER == 1
+
 #if (DEBUG_CHECKSUM == 1)
   myip_param_t ip_param;
   COPY_IPV4_ADDR(ip_param.srcip, ip_hdr->srcip);

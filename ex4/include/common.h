@@ -18,6 +18,7 @@
 #define FG_ICMP_SEND_REQUEST 1
 #define FG_DNS_QUERY 1
 #define FG_DNS_DO_PING 1
+#define FG_TCP_SEND_SYN 1
 
 #define DEBUG_PACKET 0
 #define DEBUG_PACKET_DUMP 0
@@ -33,14 +34,17 @@
 #define DEBUG_IP_DUMP 0
 
 #define DEBUG_ICMP 1
+#define DEBUG_ICMP_DUMP 0
 
 #define DEBUG_UDP 1
+#define DEBUG_UDP_FILTER 1
 #define DEBUG_UDP_DUMP 0
 
 #define DEBUG_DNS 1
 #define DEBUG_DNS_DUMP 1
 
-#define DEBUG_TCP 0
+#define DEBUG_TCP 1
+#define DEBUG_TCP_FILTER 1
 #define DEBUG_TCP_DUMP 0
 
 /*

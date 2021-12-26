@@ -7,6 +7,11 @@
  ***	TCP
  ***/
 
+/*====================*
+ ***** Parameters *****
+ *====================*/
+#define TCP_FILTER_PORT 0x5679
+
 /*============================*
  ***** Protocol Constants *****
  *============================*/
@@ -17,6 +22,8 @@
 #define TCP_FG_RST 0x04
 #define TCP_FG_SYN 0x02
 #define TCP_FG_FIN 0x01
+#define TCP_MIN_HLEN 0x50
+#define TCP_DEF_WINDOW 1024
 
 /*=========================*
  ***** Protocol Format *****
@@ -31,7 +38,6 @@ typedef struct {
   uint16_t window;
   uint16_t chksum;
   uint16_t urgent;
-  uint8_t data[1];
 } mytcp_hdr_t;
 
 typedef struct {

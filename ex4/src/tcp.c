@@ -44,7 +44,7 @@ static uint16_t tcp_checksum(myip_param_t *ip_param, uint8_t *pkt, int tcplen) {
   /* checksum: tcp packet */
   oldchksum = tcp_hdr->chksum;
   tcp_hdr->chksum = swap16((uint16_t)sum);
-  newchksum = checksum((uint8_t *)&pkt, tcplen);
+  newchksum = checksum(pkt, tcplen);
   tcp_hdr->chksum = oldchksum;
 
   /* final */
@@ -66,6 +66,10 @@ void tcp_main(mypcap_t *p, uint8_t *pkt, int len) {
 
   tcp_hdr = (mytcp_hdr_t *)pkt;
 
+#if (DEBUG_TCP == 1 && DEBUG_TCP_FILTER == 1)
+  if (swap16(tcp_hdr->dstport) != TCP_FILTER_PORT) return;
+#endif  // DEBUG_TCP == 1 && DEBUG_TCP_FILTER == 1
+
 #if (DEBUG_TCP == 1)
   myip_param_t ip_param;
   int tcp_len;
@@ -85,7 +89,7 @@ void tcp_main(mypcap_t *p, uint8_t *pkt, int len) {
          (int)tcp_hdr->chksum, chk);
 #endif /* DEBUG_TCP */
 #if (DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_TCP_DUMP == 1)
-  print_data((uint8_t *)ip, len);
+  print_data((uint8_t *)pkt, len);
 #endif /* DEBUG_TCP_DUMP */
 }
 
@@ -103,9 +107,26 @@ void tcp_send(mypcap_t *p, mytcp_param_t tcp_param, uint8_t *payload,
 
   tcp_hdr->srcport = swap16(tcp_param.srcport);
   tcp_hdr->dstport = swap16(tcp_param.dstport);
+  tcp_hdr->seq = 0;
+  tcp_hdr->ack = 0;
+  tcp_hdr->hlen = TCP_MIN_HLEN;
+  tcp_hdr->flags = 0;
+  tcp_hdr->flags |= TCP_FG_SYN;
+  tcp_hdr->window = swap16(TCP_DEF_WINDOW);
+  tcp_hdr->urgent = 0;
   tcp_hdr->chksum = tcp_checksum(ip_param, pkt, pkt_len);
 
   memcpy(pkt + sizeof(mytcp_hdr_t), payload, payload_len);
+
+#if (DEBUG_TCP)
+  printf("tcp_send(): %d->%s:%d, %s Len=%d, chksum=%04x\n",
+         (int)tcp_param.srcport, ip_addrstr(ip_param->dstip, NULL),
+         (int)tcp_param.dstport, tcp_flagstr(tcp_hdr->flags), pkt_len,
+         tcp_hdr->chksum);
+#endif /* DEBUG_TCP */
+#if (DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_TCP_DUMP == 1)
+  print_data((uint8_t *)pkt, pkt_len);
+#endif /* DEBUG_TCP_DUMP */
 
   ip_send(p, ip_param, pkt, pkt_len);
 }

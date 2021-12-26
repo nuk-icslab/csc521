@@ -65,14 +65,16 @@ void icmp_main(mypcap_t *p, uint8_t *pkt, int len) {
 
   if (icmp_hdr->type >= N_ICMP_TYPE) {
     printf("[Bad Type %d] ", icmp_hdr->type);
-  } else
+  } else {
     printf("[%s] ", ICMP_TYPE[icmp_hdr->type]);
-
+  }
   switch (icmp_hdr->type) {
     case ICMP_TYPE_ECHO_REP:
     case ICMP_TYPE_ECHO_REQ:
       printf("\n");
+#if (DEBUG_ICMP_DUMP == 1)
       print_data((uint8_t *)icmp_hdr, len);
+#endif  // DEBUG_ICMP_DUMP
       break;
     case ICMP_TYPE_DST_UN:
     case ICMP_TYPE_REDIR:

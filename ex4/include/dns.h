@@ -2,6 +2,8 @@
 #define __DNS_H__
 
 #include "common.h"
+#include "ip.h"
+#include "mypcap.h"
 #include "udp.h"
 
 /***
