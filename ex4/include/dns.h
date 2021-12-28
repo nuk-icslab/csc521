@@ -82,17 +82,24 @@ typedef struct {
  */
 
 struct rrpart {
-  word rtype,          /* resource record type = DTYPEA */
-      rclass;          /* RR class = DIN */
+  word rtype;          /* resource record type = DTYPEA */
+  word rclass;         /* RR class = DIN */
   longword ttl;        /* time-to-live, changed to 32 bits */
   word rdlength;       /* length of next field */
   byte rdata[DOMSIZE]; /* data field */
 };
 
 /*
+ * The type and class part of an question entry
+ */
+struct qpart {
+  word qtype;
+  word qclass;
+};
+
+/*
  *  data for domain name lookup
  */
-
 typedef struct {
   dnshead_t header;
   byte payload[DOMSIZE];

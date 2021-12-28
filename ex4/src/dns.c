@@ -52,43 +52,42 @@ static word dns_unpack(byte *dst, byte *src, byte *buf) {
  */
 static int dns_extract(uint8_t *pkt, uint8_t *mip) {
   mydns_t *qp = (mydns_t *)pkt;
-  word i, j, nans, rcode;
+  word domlen, j, nans, rcode;
   struct rrpart *rrp;
   byte *p, space[260];
   int dns_answer_count = 0;
 
-  nans = swap16(qp->header.ancount);            /* number of answers */
   rcode = DFG_RCODE & swap16(qp->header.flags); /* return code */
   if (rcode > 0) return (rcode);
 
-  if (nans < 1 || !((swap16(qp->header.flags) & DFG_QR)))
+  nans = swap16(qp->header.ancount); /* number of answers */
+  if (nans < 1 || !(swap16(qp->header.flags) & DFG_QR))
     return (-1); /* error: no answers or response flag not set */
 
   /*---- question section */
-  p = (byte *)&qp->payload;             /* where question starts */
-  i = dns_unpack(space, p, (byte *)qp); /* unpack question name */
-  p += i + 4; /*  spec defines name then QTYPE + QCLASS = 4 bytes */
+  p = (byte *)&qp->payload;                  /* where question starts */
+  domlen = dns_unpack(space, p, (byte *)qp); /* unpack question name */
+  p += domlen + sizeof(struct qpart);
 
   /*---- answer section */
   /*	There may be several answers.
    *	We will take the first one which has an IP number.
    *	There may be other types of answers to support later.
    */
+  while (nans-- > 0) {                         /* look at each answer */
+    domlen = dns_unpack(space, p, (byte *)qp); /* answer to unpack */
+    p += domlen;                               /* account for string */
+    rrp = (struct rrpart *)p;                  /* resource record here */
 
-  while (nans-- > 0) {                    /* look at each answer */
-    i = dns_unpack(space, p, (byte *)qp); /* answer to unpack */
-    p += i;                               /* account for string */
-    rrp = (struct rrpart *)p;             /* resource record here */
-
-    if (!*p && *(p + 1) == DTYPE_A && !*(p + 2) && *(p + 3) == DCLASS_IN) {
+    if (swap16(rrp->rtype) == DTYPE_A && swap16(rrp->rclass) == DCLASS_IN) {
       /* correct type and class */
       SET_IP(mip, rrp->rdata); /* save IP # */
       dns_answer_count++;
 #if (DEBUG_DNS == 1)
       printf("dns_extract(): Answer %d = ", dns_answer_count);
       print_ip((uint8_t *)mip, "\n");
-#endif            /* DEBUG_DNS == 1 */
-      return (0); /* successful return */
+#endif       /* DEBUG_DNS == 1 */
+      break; /* successful return */
     }
     memcpy(&j, &rrp->rdlength, 2);
     p += 10 + swap16(j); /* length of rest of RR */
@@ -155,9 +154,9 @@ static int dns_packdom(byte *dst, byte *src) {
  */
 static void dns_sendom(mypcap_t *p, char *mname, uint8_t *nameserver) {
   mydns_t question;
+  struct qpart *question_part;
   byte namebuf[DOMSIZE];
-  word i, ulen;
-  byte *psave, *payload;
+  word domlen, ulen;
 
 #if (DEBUG_DNS == 1)
   printf("dns_sendom(): %s\n", mname);
@@ -166,18 +165,14 @@ static void dns_sendom(mypcap_t *p, char *mname, uint8_t *nameserver) {
   strcpy((char *)namebuf, mname);
 
   dns_qinit(&question); /* initialize some flag fields */
-
-  psave = (byte *)&(question.payload);
-  i = dns_packdom(psave, namebuf);
-
-  payload = &(question.payload[i]);
-  *payload++ = 0;         /* high byte of qtype */
-  *payload++ = DTYPE_A;   /* number is < 256, so we know high byte=0 */
-  *payload++ = 0;         /* high byte of qclass */
-  *payload++ = DCLASS_IN; /* qtype is < 256 */
-
   question.header.ident = swap16(DEF_DNS_ID);
-  ulen = sizeof(dnshead_t) + (payload - psave);
+
+  domlen = dns_packdom(question.payload, namebuf);
+  question_part = (struct qpart *)(question.payload + domlen);
+  question_part->qtype = swap16(DTYPE_A);
+  question_part->qclass = swap16(DCLASS_IN);
+
+  ulen = sizeof(dnshead_t) + domlen + sizeof(struct qpart);
 #if (DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_UDP_DUMP == 0 && \
      DEBUG_DNS_DUMP == 1)
   print_data((uint8_t *)&question, ulen);
