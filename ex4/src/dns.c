@@ -16,53 +16,53 @@ static ipaddr_t dns_answer = 0;
  * Includes the NULL terminator in its length count.
  */
 static word dns_unpack(byte *dst, byte *src, byte *msg) {
-  int retval, label_len, offset;
-  byte *savesrc;
-
-  savesrc = src;
-  retval = 0;
+  enum { ST_LEN, ST_LABEL } state = ST_LEN;
+  unsigned int comp_len = 0, len, offset;
+  byte *c;
 
 #if (DEBUG_DNS == 1)
   printf("dns_unpack(): ");
 #endif /* DEBUG_DNS == 1 */
 
-  while (*src) { /* end with 0x00 */
-    switch (*src & 0xc0) {
-      case 0xc0: /* pointer */
-        if (!retval) retval = src - savesrc + 2;
-        offset = swap16(*(word *)src) & 0x3fff;
+  for (c = src; *c; c++) { /* end with 0x00 */
+    switch (state) {
+      case ST_LEN:
+        if ((*c & 0xc0) != 0xc0) {
+          len = (*c & 0x3f) - 1; /* The first byte is the length */
+          state = ST_LABEL;
+        } else {
+          if (!comp_len) comp_len = c - src + sizeof(word);
+          offset = swap16(*(word *)c) & 0x3fff;
 #if (DEBUG_DNS == 1)
-        printf("(%d) ", offset);
+          printf("(%d) ", offset);
 #endif /* DEBUG_DNS == 1 */
-        src = &msg[offset];
+          c = &msg[offset] - 1;
+        }
         break;
-      case 0x00:
-        label_len = *src & 0x3f; /* the 1st byte is the length */
+      case ST_LABEL:
 #if (DEBUG_DNS == 1)
-        printf("%.*s ", label_len, src + 1);
+        printf("%c", *c);
 #endif /* DEBUG_DNS == 1 */
-        memcpy(dst, ++src, label_len);
-        dst += label_len;
-        src += label_len;
-        *dst++ = '.';
+        *dst++ = *c;
+        if (len > 0) {
+          len--;
+        } else {
+          *dst++ = '.';
+          state = ST_LEN;
+#if (DEBUG_DNS == 1)
+          printf(" ");
+#endif /* DEBUG_DNS == 1 */
+        }
         break;
-      default:
-#if (DEBUG_DNS == 1)
-        printf("dns_unpack(): Illegal label %02x\n", *src);
-#endif /* DEBUG_DNS == 1 */
-        return 0;
     }
   }
 #if (DEBUG_DNS == 1)
   printf("\n");
 #endif /* DEBUG_DNS == 1 */
 
-  *(--dst) = '\0'; /* add terminator */
-  src++;           /* account for terminator on src */
+  *dst = '\0'; /* add terminator */
 
-  if (!retval) retval = src - savesrc;
-
-  return (retval);
+  return comp_len ? comp_len : (c + 1) - src;
 }
 
 /*
