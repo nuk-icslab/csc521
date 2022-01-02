@@ -58,11 +58,18 @@ int main_proc(mypcap_t *p) {
     if (fgets(buf, MAX_LINEBUF, stdin) == NULL) break;
     trimright(buf);
     if ((ip = retrieve_ip_addr(buf)) != 0 || (ip = resolve(p, buf)) != 0) {
+      printf("main_proc(): %s = %s\n", buf, ip_addrstr((uint8_t *)&ip, NULL));
 #if (FG_DNS_DO_PING == 1)
       icmp_ping(p, (uint8_t *)&ip);
-#else
-      printf("%s\t%s\n", buf, ip_addrstr(ip, NULL));
-#endif /* FG_DNS_DO_PING */
+#endif  // FG_DNS_DO_PING
+#if (FG_TCP_SEND_SYN == 1)
+      mytcp_param_t tcp_param;
+      COPY_IPV4_ADDR(tcp_param.ip.dstip, (uint8_t *)&ip);
+      tcp_param.srcport = TCP_FILTER_PORT;
+      tcp_param.dstport = 80;
+
+      tcp_send(p, tcp_param, NULL, 0);
+#endif  // FG_TCP_SEND_SYN
     } else {
       printf("Invalid IP (Enter to exit)\n");
     }

@@ -276,7 +276,14 @@ void dns_main(mypcap_t *p, myip_hdr_t *ip_hdr, uint8_t *pkt, int len) {
       printf("\tdns_extract() returnd that domain name not existed(%d)\n", i);
 #endif /* DEBUG_DNS == 1 */
       break;
-    case -1: /* strange return code from dns_extract */
+    case -1: /* no answers or response flag not set */
+#if (DEBUG_DNS == 1)
+      printf(
+          "\tdns_extract() returnd that no answers or response flag not "
+          "set(%d)\n",
+          i);
+      break;
+#endif       /* DEBUG_DNS == 1 */
     default: /* dunno */
 #if (DEBUG_DNS == 1)
       printf("\tdns_extract() return %08x\n", i);
