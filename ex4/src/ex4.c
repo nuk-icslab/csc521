@@ -23,7 +23,8 @@ int main_proc(mypcap_t *p) {
 
 #if (FG_DNS_QUERY == 1)
   ip = resolve(p, defdnsquery);
-  printf("%s\t%s\n", defdnsquery, ip_addrstr((uint8_t *)&ip, NULL));
+  printf("main_proc(): %s = %s\n", defdnsquery,
+         ip_addrstr((uint8_t *)&ip, NULL));
 #if (FG_ICMP_SEND_REQUEST == 1)
   icmp_ping(p, (uint8_t *)&ip);
 #endif  // FG_ICMP_SEND_REQUEST

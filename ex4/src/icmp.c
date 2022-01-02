@@ -99,7 +99,7 @@ void icmp_ping(mypcap_t *p, uint8_t *dstip) {
   if (dstip == NULL) dstip = defpingip;
 
 #if (DEBUG_ICMP == 1)
-  printf("Ping %s\n", ip_addrstr(dstip, NULL));
+  printf("icmp_ping(): Ping %s\n", ip_addrstr(dstip, NULL));
 #endif /* DEBUG_ICMP */
   SET_IP(ip_param.dstip, dstip);
   SET_IP(ip_param.srcip, myipaddr);

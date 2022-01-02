@@ -15,28 +15,48 @@ static ipaddr_t dns_answer = 0;
  * Handles pointers to continuation domain names
  * Includes the NULL terminator in its length count.
  */
-static word dns_unpack(byte *dst, byte *src, byte *buf) {
-  int i, j, retval, labellen;
+static word dns_unpack(byte *dst, byte *src, byte *msg) {
+  int retval, label_len, offset;
   byte *savesrc;
 
   savesrc = src;
   retval = 0;
 
+#if (DEBUG_DNS == 1)
+  printf("dns_unpack(): ");
+#endif /* DEBUG_DNS == 1 */
+
   while (*src) { /* end with 0x00 */
-    j = *((uint8_t *)src);
-
-    while ((j & 0xC0) == 0xC0) { /* pointer */
-      if (!retval) retval = src - savesrc + 2;
-      src++;
-      src = &buf[(j & 0x3f) * 256 + *((uint8_t *)src)];
-      j = *((uint8_t *)src);
+    switch (*src & 0xc0) {
+      case 0xc0: /* pointer */
+        if (!retval) retval = src - savesrc + 2;
+        offset = swap16(*(word *)src) & 0x3fff;
+#if (DEBUG_DNS == 1)
+        printf("(%d) ", offset);
+#endif /* DEBUG_DNS == 1 */
+        src = &msg[offset];
+        break;
+      case 0x00:
+        label_len = *src & 0x3f; /* the 1st byte is the length */
+#if (DEBUG_DNS == 1)
+        printf("%.*s ", label_len, src + 1);
+#endif /* DEBUG_DNS == 1 */
+        memcpy(dst, ++src, label_len);
+        dst += label_len;
+        src += label_len;
+        *dst++ = '.';
+        break;
+      default:
+#if (DEBUG_DNS == 1)
+        printf("dns_unpack(): Illegal label %02x\n", *src);
+#endif /* DEBUG_DNS == 1 */
+        return 0;
     }
-    labellen = j & 0x3f; /* the 1st byte is the length */
-    src++;
-    for (i = 0; i < labellen; i++) *dst++ = *src++;
-
-    *dst++ = '.';
   }
+#if (DEBUG_DNS == 1)
+  printf("\n");
+#endif /* DEBUG_DNS == 1 */
+
   *(--dst) = '\0'; /* add terminator */
   src++;           /* account for terminator on src */
 
@@ -52,9 +72,9 @@ static word dns_unpack(byte *dst, byte *src, byte *buf) {
  */
 static int dns_extract(uint8_t *pkt, uint8_t *mip) {
   mydns_t *qp = (mydns_t *)pkt;
-  word domlen, j, nans, rcode;
+  word domlen, nans, rcode;
   struct rrpart *rrp;
-  byte *p, space[260];
+  byte *p, name[DOMSIZE];
   int dns_answer_count = 0;
 
   rcode = DFG_RCODE & swap16(qp->header.flags); /* return code */
@@ -65,32 +85,43 @@ static int dns_extract(uint8_t *pkt, uint8_t *mip) {
     return (-1); /* error: no answers or response flag not set */
 
   /*---- question section */
-  p = (byte *)&qp->payload;                  /* where question starts */
-  domlen = dns_unpack(space, p, (byte *)qp); /* unpack question name */
+  p = (byte *)&qp->payload;          /* where question starts */
+  domlen = dns_unpack(name, p, pkt); /* unpack question name */
+  printf("dns_extract(): [Question] %s\n", name);
   p += domlen + sizeof(struct qpart);
 
   /*---- answer section */
   /*	There may be several answers.
-   *	We will take the first one which has an IP number.
+   *	We will take the last one which has an IP number.
    *	There may be other types of answers to support later.
    */
-  while (nans-- > 0) {                         /* look at each answer */
-    domlen = dns_unpack(space, p, (byte *)qp); /* answer to unpack */
-    p += domlen;                               /* account for string */
-    rrp = (struct rrpart *)p;                  /* resource record here */
+  while (nans-- > 0) {                 /* look at each answer */
+    domlen = dns_unpack(name, p, pkt); /* answer to unpack */
+    p += domlen;                       /* account for string */
+    rrp = (struct rrpart *)p;          /* resource record here */
 
-    if (swap16(rrp->rtype) == DTYPE_A && swap16(rrp->rclass) == DCLASS_IN) {
-      /* correct type and class */
-      SET_IP(mip, rrp->rdata); /* save IP # */
-      dns_answer_count++;
+    if (swap16(rrp->rclass) == DCLASS_IN) {
+      switch (swap16(rrp->rtype)) {
+        case DTYPE_A:
+          SET_IP(mip, rrp->rdata); /* save IP # */
+          dns_answer_count++;
 #if (DEBUG_DNS == 1)
-      printf("dns_extract(): Answer %d = ", dns_answer_count);
-      print_ip((uint8_t *)mip, "\n");
-#endif       /* DEBUG_DNS == 1 */
-      break; /* successful return */
+          printf("dns_extract(): [Answer %d] %s IN A ", dns_answer_count, name);
+          print_ip((uint8_t *)mip, "\n");
+#endif /* DEBUG_DNS == 1 */
+          break;
+        case DTYPE_CNAME:
+#if (DEBUG_DNS == 1)
+          byte cname[DOMSIZE];
+          dns_unpack(cname, rrp->rdata, pkt);
+          printf("dns_extract(): [Answer %d] %s IN CNAME %s\n",
+                 dns_answer_count, name, cname);
+#endif /* DEBUG_DNS == 1 */
+          break;
+      }
     }
-    memcpy(&j, &rrp->rdlength, 2);
-    p += 10 + swap16(j); /* length of rest of RR */
+    p += ((uint8_t *)&(rrp->rdata) - (uint8_t *)rrp) + /* length of rrpart */
+         swap16(rrp->rdlength); /* length of rest of RR */
   }
   if (dns_answer_count != 0) return (0);
   return (-1); /* answer not found */
@@ -111,41 +142,37 @@ static void dns_qinit(mydns_t *question) {
  * dns_packdom() - pack a regular text string into a packed domain name
  * Returns packeted length
  */
-static int dns_packdom(byte *dst, byte *src) {
-  byte *p, *q, *savedst;
-  int i;
+static int dns_packdom(byte *dst, char *src) {
+  byte *h, *d;
+  const char delim = '.';
 
-  p = src;
-  savedst = dst;
+  strncat(src, &delim, 1);
 
-  do {
-    // Reserve the space for length storage.
-    *dst = 0;
-    q = dst + 1;
+#if (DEBUG_DNS == 1)
+  printf("dns_packdom(): ");
+#endif /* DEBUG_DNS == 1 */
 
-    // Copy the rest of string to dst until dot symbol.
-    while (*p && (*p != '.')) {
-      *q++ = *p++;
+  for (h = dst, d = h + 1; *src; src++) {
+    if (*src != delim) {
+      *d++ = (byte)*src; /* Copy the character to the destination */
+    } else {
+      *h = d - (h + 1);           /* Fill the length of label to the header */
+      if (*h > 0x3f) return (-1); /* If the length is too long, return error*/
+
+#if (DEBUG_DNS == 1)
+      printf("%d %.*s ", *h, *h, h + 1);
+#endif /* DEBUG_DNS == 1 */
+
+      h = d, d = h + 1; /*Update the pointers*/
     }
+  }
+  *h = '\0'; /* Append terminator to the end */
 
-    // Calculate the length
-    i = p - src;
+#if (DEBUG_DNS == 1)
+  printf("%d\n", *h);
+#endif /* DEBUG_DNS == 1 */
 
-    // If the length is too long, return error.
-    if (i > 63) return (-1);
-
-    // Copy the length to the reserved space.
-    *dst = i;
-    *q = 0;
-
-    // If not finished yet, update pointers.
-    if (*p) {
-      src = ++p;
-      dst = q;
-    }
-  } while (*p);
-  q++;
-  return (q - savedst); /* length of packed string */
+  return (d - dst); /* Length of packed string */
 }
 
 /*
@@ -155,14 +182,14 @@ static int dns_packdom(byte *dst, byte *src) {
 static void dns_sendom(mypcap_t *p, char *mname, uint8_t *nameserver) {
   mydns_t question;
   struct qpart *question_part;
-  byte namebuf[DOMSIZE];
+  char namebuf[DOMSIZE];
   word domlen, ulen;
 
 #if (DEBUG_DNS == 1)
   printf("dns_sendom(): %s\n", mname);
 #endif /* DEBUG_DNS == 1 */
 
-  strcpy((char *)namebuf, mname);
+  strcpy(namebuf, mname);
 
   dns_qinit(&question); /* initialize some flag fields */
   question.header.ident = swap16(DEF_DNS_ID);

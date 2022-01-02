@@ -53,8 +53,9 @@
 #define DRES_NOWAY 5 /* name server refusing to do request */
 
 /* misc definition */
-#define DTYPE_A 1    /* host address resource record (RR) */
-#define DTYPE_PTR 12 /* a domain name ptr */
+#define DTYPE_A 1     /* host address resource record (RR) */
+#define DTYPE_CNAME 5 /* The canonical name for an alias*/
+#define DTYPE_PTR 12  /* a domain name ptr */
 
 #define DCLASS_IN 1     /* ARPA internet class */
 #define DCLASS_WILD 255 /* wildcard for several of classifications */
