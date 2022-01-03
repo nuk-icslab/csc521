@@ -74,8 +74,11 @@ static int dns_extract(uint8_t *pkt, uint8_t *mip) {
   mydns_t *qp = (mydns_t *)pkt;
   word domlen, nans, rcode;
   struct rrpart *rrp;
-  byte *p, name[DOMSIZE];
   int dns_answer_count = 0;
+  byte *p, name[DOMSIZE];
+#if (DEBUG_DNS == 1)
+  byte cname[DOMSIZE];
+#endif /* DEBUG_DNS == 1 */
 
   rcode = DFG_RCODE & swap16(qp->header.flags); /* return code */
   if (rcode > 0) return (rcode);
@@ -112,7 +115,6 @@ static int dns_extract(uint8_t *pkt, uint8_t *mip) {
           break;
         case DTYPE_CNAME:
 #if (DEBUG_DNS == 1)
-          byte cname[DOMSIZE];
           dns_unpack(cname, rrp->rdata, pkt);
           printf("dns_extract(): [Answer %d] %s IN CNAME %s\n",
                  dns_answer_count, name, cname);
