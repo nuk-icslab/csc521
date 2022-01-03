@@ -15,52 +15,43 @@ static ipaddr_t dns_answer = 0;
  * Handles pointers to continuation domain names
  * Includes the NULL terminator in its length count.
  */
-static word dns_unpack(byte *dst, byte *src, byte *msg) {
-  enum { ST_LEN, ST_LABEL } state = ST_LEN;
-  unsigned int comp_len = 0, len, offset;
-  byte *c;
+static int dns_unpack(byte *dst, byte *src, byte *msg) {
+  enum { ST_LEN, ST_CONTENT } state = ST_LEN;
+  unsigned int len, offset;
+  byte *c = src;
+  int comp_len = 0; /* The compressed size of the sequence of labels */
 
-#if (DEBUG_DNS == 1)
-  printf("dns_unpack(): ");
-#endif /* DEBUG_DNS == 1 */
+  if (DEBUG_DNS) printf("%s(): ", __func__);
 
-  for (c = src; *c; c++) { /* end with 0x00 */
+  while (*c) { /* end with 0x00 */
     switch (state) {
       case ST_LEN:
         if ((*c & 0xc0) != 0xc0) {
-          len = (*c & 0x3f) - 1; /* The first byte is the length */
-          state = ST_LABEL;
+          len = *c++; /* The first byte is the length */
+          state = ST_CONTENT;
         } else {
           if (!comp_len) comp_len = c - src + sizeof(word);
           offset = swap16(*(word *)c) & 0x3fff;
-#if (DEBUG_DNS == 1)
-          printf("(%d) ", offset);
-#endif /* DEBUG_DNS == 1 */
-          c = &msg[offset] - 1;
+          if (DEBUG_DNS) printf("(%d) ", offset);
+          c = &msg[offset];
         }
         break;
-      case ST_LABEL:
-#if (DEBUG_DNS == 1)
-        printf("%c", *c);
-#endif /* DEBUG_DNS == 1 */
-        *dst++ = *c;
+      case ST_CONTENT:
         if (len > 0) {
-          len--;
+          if (DEBUG_DNS) printf("%c", *c);
+          *dst++ = *c++, len--;
         } else {
+          if (DEBUG_DNS) printf(" ");
           *dst++ = '.';
           state = ST_LEN;
-#if (DEBUG_DNS == 1)
-          printf(" ");
-#endif /* DEBUG_DNS == 1 */
         }
+        if (len > 63) return -1; /* Oversized label */
         break;
     }
   }
-#if (DEBUG_DNS == 1)
-  printf("\n");
-#endif /* DEBUG_DNS == 1 */
+  if (DEBUG_DNS) printf("\n");
 
-  *dst = '\0'; /* add terminator */
+  *dst = '\0'; /* Add terminator */
 
   return comp_len ? comp_len : (c + 1) - src;
 }
@@ -76,9 +67,7 @@ static int dns_extract(uint8_t *pkt, uint8_t *mip) {
   struct rrpart *rrp;
   int dns_answer_count = 0;
   byte *p, name[DOMSIZE];
-#if (DEBUG_DNS == 1)
   byte cname[DOMSIZE];
-#endif /* DEBUG_DNS == 1 */
 
   rcode = DFG_RCODE & swap16(qp->header.flags); /* return code */
   if (rcode > 0) return (rcode);
@@ -88,9 +77,11 @@ static int dns_extract(uint8_t *pkt, uint8_t *mip) {
     return (-1); /* error: no answers or response flag not set */
 
   /*---- question section */
-  p = (byte *)&qp->payload;          /* where question starts */
-  domlen = dns_unpack(name, p, pkt); /* unpack question name */
-  printf("dns_extract(): [Question] %s\n", name);
+  p = (byte *)&qp->payload;                        /* where question starts */
+  if ((domlen = dns_unpack(name, p, pkt)) == -1) { /* unpack question name */
+    debug_print(DEBUG_DNS, "dns_unpack() error %d\n", -1);
+  }
+  debug_print(DEBUG_DNS, "[Question] %s\n", name);
   p += domlen + sizeof(struct qpart);
 
   /*---- answer section */
@@ -98,27 +89,27 @@ static int dns_extract(uint8_t *pkt, uint8_t *mip) {
    *	We will take the last one which has an IP number.
    *	There may be other types of answers to support later.
    */
-  while (nans-- > 0) {                 /* look at each answer */
-    domlen = dns_unpack(name, p, pkt); /* answer to unpack */
-    p += domlen;                       /* account for string */
-    rrp = (struct rrpart *)p;          /* resource record here */
+  while (nans-- > 0) {                               /* look at each answer */
+    if ((domlen = dns_unpack(name, p, pkt)) == -1) { /* answer to unpack */
+      debug_print(DEBUG_DNS, "dns_unpack() error %d\n", -1);
+    }
+    p += domlen;              /* account for string */
+    rrp = (struct rrpart *)p; /* resource record here */
 
     if (swap16(rrp->rclass) == DCLASS_IN) {
       switch (swap16(rrp->rtype)) {
         case DTYPE_A:
           SET_IP(mip, rrp->rdata); /* save IP # */
           dns_answer_count++;
-#if (DEBUG_DNS == 1)
-          printf("dns_extract(): [Answer %d] %s IN A ", dns_answer_count, name);
-          print_ip((uint8_t *)mip, "\n");
-#endif /* DEBUG_DNS == 1 */
+          debug_print(DEBUG_DNS, "[Answer %d] %s IN A %s\n", dns_answer_count,
+                      name, ip_addrstr((uint8_t *)mip, NULL));
           break;
         case DTYPE_CNAME:
-#if (DEBUG_DNS == 1)
-          dns_unpack(cname, rrp->rdata, pkt);
-          printf("dns_extract(): [Answer %d] %s IN CNAME %s\n",
-                 dns_answer_count, name, cname);
-#endif /* DEBUG_DNS == 1 */
+          if (dns_unpack(cname, rrp->rdata, pkt) == -1) {
+            debug_print(DEBUG_DNS, "dns_unpack() error %d\n", -1);
+          }
+          debug_print(DEBUG_DNS, "[Answer %d] %s IN CNAME %s\n",
+                      dns_answer_count, name, cname);
           break;
       }
     }
@@ -150,9 +141,7 @@ static int dns_packdom(byte *dst, char *src) {
 
   strncat(src, &delim, 1);
 
-#if (DEBUG_DNS == 1)
-  printf("dns_packdom(): ");
-#endif /* DEBUG_DNS == 1 */
+  if (DEBUG_DNS) printf("%s(): ", __func__);
 
   for (h = dst, d = h + 1; *src; src++) {
     if (*src != delim) {
@@ -161,18 +150,14 @@ static int dns_packdom(byte *dst, char *src) {
       *h = d - (h + 1);           /* Fill the length of label to the header */
       if (*h > 0x3f) return (-1); /* If the length is too long, return error*/
 
-#if (DEBUG_DNS == 1)
-      printf("%d %.*s ", *h, *h, h + 1);
-#endif /* DEBUG_DNS == 1 */
+      if (DEBUG_DNS) printf("%d %.*s ", *h, *h, h + 1);
 
       h = d, d = h + 1; /*Update the pointers*/
     }
   }
   *h = '\0'; /* Append terminator to the end */
 
-#if (DEBUG_DNS == 1)
-  printf("%d\n", *h);
-#endif /* DEBUG_DNS == 1 */
+  if (DEBUG_DNS) printf("%d\n", *h);
 
   return (d - dst); /* Length of packed string */
 }
@@ -187,9 +172,7 @@ static void dns_sendom(mypcap_t *p, char *mname, uint8_t *nameserver) {
   char namebuf[DOMSIZE];
   word domlen, ulen;
 
-#if (DEBUG_DNS == 1)
-  printf("dns_sendom(): %s\n", mname);
-#endif /* DEBUG_DNS == 1 */
+  debug_print(DEBUG_DNS, "dns_sendom(): %s\n", mname);
 
   strcpy(namebuf, mname);
 
@@ -202,10 +185,7 @@ static void dns_sendom(mypcap_t *p, char *mname, uint8_t *nameserver) {
   question_part->qclass = swap16(DCLASS_IN);
 
   ulen = sizeof(dnshead_t) + domlen + sizeof(struct qpart);
-#if (DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_UDP_DUMP == 0 && \
-     DEBUG_DNS_DUMP == 1)
-  print_data((uint8_t *)&question, ulen);
-#endif /* DEBUG_DNS_DUMP */
+  debug_print_data(DEBUG_DNS_DUMP, (uint8_t *)&question, ulen);
 
   myudp_param_t udp_param;
   udp_param.dstport = UDP_PORT_DNS;
@@ -258,15 +238,9 @@ void dns_main(mypcap_t *p, myip_hdr_t *ip_hdr, uint8_t *pkt, int len) {
 
   assert(swap16(udp_hdr->length) == len + sizeof(myudp_hdr_t));
 
-#if (DEBUG_DNS == 1)
-  printf("dns_main(): Len=%d, ", len);
-  print_ip(ip_hdr->srcip, "->");
-  print_ip(ip_hdr->dstip, "\n");
-#endif /* DEBUG_DNS == 1 */
-#if (DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_UDP_DUMP == 0 && \
-     DEBUG_DNS_DUMP == 1)
-  print_data(pkt, len);
-#endif /* DEBUG_DNS_DUMP */
+  debug_print(DEBUG_DNS, "Len=%d, %s->%s\n", len,
+              ip_addrstr(ip_hdr->srcip, NULL), ip_addrstr(ip_hdr->dstip, NULL));
+  debug_print_data(DEBUG_DNS_DUMP, pkt, len);
 
   i = dns_extract(pkt, (uint8_t *)&ipaddr);
   switch (i) {
@@ -274,23 +248,20 @@ void dns_main(mypcap_t *p, myip_hdr_t *ip_hdr, uint8_t *pkt, int len) {
       dns_answer = ipaddr;
       break;
     case 3: /* name does not exist */
-#if (DEBUG_DNS == 1)
-      printf("\tdns_extract() returnd that domain name not existed(%d)\n", i);
-#endif /* DEBUG_DNS == 1 */
+      debug_print(DEBUG_DNS,
+                  "\tdns_extract() returnd that domain name not existed(%d)\n",
+                  i);
       break;
     case -1: /* no answers or response flag not set */
-#if (DEBUG_DNS == 1)
-      printf(
+      debug_print(
+          DEBUG_DNS,
           "\tdns_extract() returnd that no answers or response flag not "
           "set(%d)\n",
           i);
       break;
-#endif       /* DEBUG_DNS == 1 */
     default: /* dunno */
-#if (DEBUG_DNS == 1)
-      printf("\tdns_extract() return %08x\n", i);
+      debug_print(DEBUG_DNS, "\tdns_extract() return %08x\n", i);
       print_data(pkt, len);
-#endif /* DEBUG_DNS == 1 */
       return;
   }
 }

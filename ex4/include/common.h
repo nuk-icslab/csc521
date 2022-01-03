@@ -131,6 +131,18 @@ extern uint16_t swap16(uint16_t s);
 extern uint32_t swap32(uint32_t val);
 extern uint16_t checksum(uint8_t *ptr, int len);
 
+#define debug_print(flag, fmt, ...)                          \
+  do {                                                       \
+    if ((flag)) printf("%s(): " fmt, __func__, __VA_ARGS__); \
+  } while (0)
+#define debug_print_data(flag, buf, len)              \
+  do {                                                \
+    if ((flag)) {                                     \
+      printf("%s(): Content of buffer:\n", __func__); \
+      print_data((buf), (len));                       \
+    }                                                 \
+  } while (0)
+
 #define GET_IP(ipaddr) (*((ipaddr_t *)(ipaddr)))
 #define SET_IP(dip, sip) (*((ipaddr_t *)(dip)) = *((ipaddr_t *)(sip)))
 #define IS_MY_IP(ipaddr) ((GET_IP(ipaddr)) == GET_IP(myipaddr))
