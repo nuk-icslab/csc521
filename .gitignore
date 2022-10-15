@@ -2,18 +2,18 @@
 .vscode
 
 # Executable of every lab
-ex1/testprog
-ex1/testrecv
-ex1/testsend
+lab1/testprog
+lab1/testrecv
+lab1/testsend
 
-ex2/build
-ex2/ex2
+lab2/build
+lab2/lab2
 
-ex3/build
-ex3/ex3
+lab3/build
+lab3/lab3
 
-ex3/build
-ex3/ex3
+lab3/build
+lab3/lab3
 
-ex4/build
-ex4/ex4
+lab4/build
+lab4/lab4

@@ -1,5 +1,5 @@
 # The target name of the executable
-TARGET=ex3
+TARGET=lab2
 
 # The definition of directories
 INCLUDE_DIR=include
