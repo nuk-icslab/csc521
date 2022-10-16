@@ -1,17 +1,18 @@
 CC=gcc
 CFLAGS=-g -O2 -Wall -fsanitize=address
 LDFLAGS=-lpcap -fsanitize=address
+SRCDIR=src
 
 .PHONY: all
 all: testprog testrecv testsend
 
-testprog: testprog.c
+testprog: $(SRCDIR)/testprog.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-testrecv: testrecv.c
+testrecv: $(SRCDIR)/testrecv.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-testsend: testsend.c
+testsend: $(SRCDIR)/testsend.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:
