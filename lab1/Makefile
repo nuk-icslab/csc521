@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-g -O0 -Wall -fsanitize=address
+CFLAGS=-g -O2 -Wall -fsanitize=address
 LDFLAGS=-lpcap -fsanitize=address
 
 .PHONY: all

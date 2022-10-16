@@ -4,8 +4,8 @@
 #include <string.h>
 
 #include "arp.h"
-#include "common.h"
 #include "mypcap.h"
+#include "util.h"
 
 /**
  * main_proc() - The main body of this lab

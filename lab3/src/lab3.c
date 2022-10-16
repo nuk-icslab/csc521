@@ -5,9 +5,9 @@
 #include <pcap.h>
 
 #include "arp.h"
-#include "common.h"
 #include "icmp.h"
 #include "mypcap.h"
+#include "util.h"
 
 /**
  * main_proc() - the main thread

@@ -1,4 +1,4 @@
-#include "common.h"
+#include <stdint.h>
 
 /*
  * The MAC address of your interface

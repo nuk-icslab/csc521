@@ -1,0 +1,15 @@
+# Whether uses POSIX compatible OS
+FG_OS_POSIX=1
+
+# Application flags
+FG_ARP_SEND_REQUEST=1
+
+# NetDevice flags
+DEBUG_PACKET=1
+DEBUG_PACKET_DUMP=0
+
+# ARP flags
+DEBUG_ARP=1
+DEBUG_ARP_REQUEST=1
+DEBUG_ARP_REPLY=1
+DEBUG_ARP_DUMP=1

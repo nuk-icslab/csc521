@@ -16,8 +16,9 @@ LDFLAGS := -lpcap -fsanitize=address
 # Find all of the .c files in SRCDIR.
 SRCS := $(wildcard $(SRCDIR)/*.c)
 OBJS := $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SRCS))
-LIB_SRCS := $(wildcard $(LIBDIR)/*.c)
-LIB_OBJS := $(patsubst $(LIBDIR)/%.c, $(OBJDIR)/%.o, $(LIB_SRCS))
+LIB_SRCS := util.c mypcap.c arp.c arptable.c ip.c icmp.c tcp.c udp.c dns.c
+LIB_OBJS := $(addprefix $(OBJDIR)/, $(LIB_SRCS:.c=.o))
+LIB_SRCS := $(addprefix $(LIBDIR)/, $(LIB_SRCS))
 
 #$(info SRCS=$(SRCS))
 #$(info LIB_SRCS=$(LIB_SRCS))

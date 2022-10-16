@@ -1,34 +1,45 @@
 # The target name of the executable
-TARGET=lab3
-
-# The definition of directories
-INCLUDE_DIR=include
-SRC_DIR=src
-TARGET_DIR=build
+NAME= lab3
 
 # Configuration of compiler and linker
-CC=gcc
-CFLAGS=-g -O0 -Wall -I$(INCLUDE_DIR) -fsanitize=address
-LDFLAGS=-lpcap -fsanitize=address
+SRCDIR := src
+OBJDIR := build
+LIBDIR := ../lib/src
+CONFIG := config
 
-# Find all of the .c files in SRC_DIR.
-# And convert the suffix to .o
-DEPS=$(patsubst $(SRC_DIR)/%.c, $(TARGET_DIR)/%.o, $(wildcard $(SRC_DIR)/*.c))
+CC := gcc
+FLAGS := $(shell cat $(CONFIG) | awk '/^[^#]+$$/ {print "-D"$$0}' ORS=' ')
+CFLAGS := -g -O2 -Wall -fsanitize=address $(FLAGS)
+INCLUDES := -Isrc -I../lib/include
+LDFLAGS := -lpcap -fsanitize=address
 
-all: $(TARGET_DIR) $(TARGET)
+# Find all of the .c files in SRCDIR.
+SRCS := $(wildcard $(SRCDIR)/*.c)
+OBJS := $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SRCS))
+LIB_SRCS := util.c mypcap.c arp.c arptable.c ip.c icmp.c
+LIB_OBJS := $(addprefix $(OBJDIR)/, $(LIB_SRCS:.c=.o))
+LIB_SRCS := $(addprefix $(LIBDIR)/, $(LIB_SRCS))
 
-# Make the target directory
-$(TARGET_DIR):
-	mkdir $(TARGET_DIR)
+#$(info SRCS=$(SRCS))
+#$(info LIB_SRCS=$(LIB_SRCS))
+#$(info FLAGS=$(FLAGS))
 
-# Link
-$(TARGET): $(DEPS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+.PHONY: all clean
+all: $(NAME)
+	@echo "Successfully built $(NAME)"
 
-# Compile
-$(TARGET_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) -o $@ $^ -c $(CFLAGS)
+$(NAME): $(OBJS) $(LIB_OBJS)
+	$(CC) $(LDFLAGS) $^ -o $@
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+$(OBJS): $(OBJDIR)/%.o: $(SRCDIR)/%.c $(CONFIG) | $(OBJDIR)
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+$(LIB_OBJS): $(OBJDIR)/%.o: $(LIBDIR)/%.c $(CONFIG) | $(OBJDIR)
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -rf $(TARGET_DIR)
-	rm -rf $(TARGET)
+	-rm $(NAME)
+	-rm -rf $(OBJDIR)
