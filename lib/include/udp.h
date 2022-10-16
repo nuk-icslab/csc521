@@ -1,13 +1,28 @@
 #ifndef __UDP_H__
 #define __UDP_H__
 
-#include "dns.h"
 #include "ip.h"
+
+/*
+ * Control flags
+ */
+#ifndef DEBUG_UDP
+#define DEBUG_UDP 0
+#endif  // DEBUG_UDP
+#ifndef DEBUG_UDP_CHECKSUM
+#define DEBUG_UDP_CHECKSUM 0
+#endif  // DEBUG_UDP_CHECKSUM
+#ifndef DEBUG_UDP_FILTER
+#define DEBUG_UDP_FILTER 0
+#endif  // DEBUG_UDP_FILTER
+#ifndef DEBUG_UDP_DUMP
+#define DEBUG_UDP_DUMP 0
+#endif  // DEBUG_UDP_DUMP
 
 /*====================*
  ***** Parameters *****
  *====================*/
-#define UDP_FILTER_PORT DEF_DNS_UDP_SRCPORT
+#define UDP_FILTER_PORT 0x3456
 
 /*============================*
  ***** Protocol Constants *****

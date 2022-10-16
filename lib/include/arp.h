@@ -1,9 +1,32 @@
 #ifndef __ARP_H__
 #define __ARP_H__
 
-#include "common.h"
 #include "ip.h"
 #include "mypcap.h"
+#include "util.h"
+
+/*
+ * Control flags
+ */
+#ifndef DEBUG_ARP
+#define DEBUG_ARP 0
+#endif  // DEBUG_ARP
+#ifndef DEBUG_ARP_REQUEST
+#define DEBUG_ARP_REQUEST 0
+#endif  // DEBUG_ARP_REQUEST
+#ifndef DEBUG_ARP_REPLY
+#define DEBUG_ARP_REPLY 0
+#endif  // DEBUG_ARP_REPLY
+#ifndef DEBUG_ARP_DUMP
+#define DEBUG_ARP_DUMP 0
+#endif  // DEBUG_ARP_DUMP
+#ifndef DEBUG_ARPCACHE
+#define DEBUG_ARPCACHE 0
+#endif  // DEBUG_ARPCACHE
+
+extern uint8_t myethaddr[ETH_ADDR_LEN];
+extern uint8_t myipaddr[IPV4_ADDR_LEN];
+extern uint8_t defarpip[IPV4_ADDR_LEN];
 
 /*============================*
  ***** Protocol Constants *****

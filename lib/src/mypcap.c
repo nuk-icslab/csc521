@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common.h"
+#include "util.h"
 
 static void capture_callback(unsigned char *arg,
                              const struct pcap_pkthdr *header,

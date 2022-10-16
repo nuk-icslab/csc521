@@ -4,6 +4,21 @@
 #include "ip.h"
 #include "mypcap.h"
 
+/*
+ * Control flags
+ */
+#ifndef DEBUG_ICMP
+#define DEBUG_ICMP 0
+#endif  // DEBUG_ICMP
+#ifndef DEBUG_ICMP_DUMP
+#define DEBUG_ICMP_DUMP 0
+#endif  // DEBUG_ICMP_DUMP
+
+/*====================*
+ ***** Parameters *****
+ *====================*/
+extern uint8_t defpingip[IPV4_ADDR_LEN];
+
 /*============================*
  ***** Protocol Constants *****
  *============================*/

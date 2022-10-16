@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "common.h"
 #include "ip.h"
+#include "util.h"
 
 static char *ICMP_TYPE[] = {"Echo Reply",
                             "1",

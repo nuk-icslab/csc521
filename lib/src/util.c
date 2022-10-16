@@ -1,12 +1,15 @@
+#include "util.h"
+
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
 
-#include "common.h"
-
-#if (FG_NATIVE_CYGWIN == 1)
+#ifndef FG_OS_POSIX
+#define FG_OS_POSIX 1
+#endif  // FG_OS_POSIX
+#if (FG_OS_POSIX == 1)
 #include <sys/select.h>
 
 /*
@@ -33,7 +36,7 @@ int readready() {
   extern int _kbhit();
   return _kbhit();
 }
-#endif /* FG_NATIVE_CYGWIN */
+#endif /* FG_OS_POSIX */
 
 /**
  * time2decstr() - Convert a time_t structure to a human-readable string.
@@ -137,17 +140,9 @@ uint16_t swap16(uint16_t x) { return (x << 8) | (x >> 8); }
 /*
  * swap32() - Swap the four bytes in a 32-bits long integer.
  */
-uint32_t swap32(uint32_t val) {
-  char *p, p0, p1;
-
-  p = (char *)&val;
-  p0 = p[0];
-  p1 = p[1];
-  p[0] = p[3];
-  p[1] = p[2];
-  p[2] = p1;
-  p[3] = p0;
-  return val;
+uint32_t swap32(uint32_t x) {
+  uint8_t *s = (uint8_t *)&x;
+  return (uint32_t)(s[0] << 24 | s[1] << 16 | s[2] << 8 | s[3]);
 }
 
 /*

@@ -1,14 +1,24 @@
 #ifndef __DNS_H__
 #define __DNS_H__
 
-#include "common.h"
 #include "ip.h"
 #include "mypcap.h"
 #include "udp.h"
+#include "util.h"
 
 /***
  ***	DNS
  ***/
+
+/*
+ * Control flags
+ */
+#ifndef DEBUG_DNS
+#define DEBUG_DNS 0
+#endif  // DEBUG_DNS
+#ifndef DEBUG_DNS_DUMP
+#define DEBUG_DNS_DUMP 0
+#endif  // DEBUG_DNS_DUMP
 
 /*====================*
  ***** Parameters *****
@@ -17,6 +27,7 @@
 #define DEF_DNS_SLEEP 2 /* seconds */
 #define DEF_DNS_UDP_SRCPORT 0x3456
 #define DEF_DNS_ID 0x5501
+extern uint8_t defdnsip[IPV4_ADDR_LEN];
 
 /*============================*
  ***** Protocol Constants *****

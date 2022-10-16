@@ -4,11 +4,11 @@
 #include <string.h>
 
 #include "arp.h"
-#include "common.h"
 #include "icmp.h"
 #include "mypcap.h"
 #include "tcp.h"
 #include "udp.h"
+#include "util.h"
 
 /**
  * ip_checksum() - The utility to calculate the checksum of IP header.
@@ -36,18 +36,18 @@ void ip_main(mypcap_t *p, uint8_t *pkt, int len) {
   char srcip[BUFLEN_IP];
   char dstip[BUFLEN_IP];
 
-#if (DEBUG_CHECKSUM == 1)
+#if (DEBUG_IP_CHECKSUM == 1)
   uint16_t chk = ip_checksum(ip_hdr);
   ;
 #else
   uint16_t chk = 0;
-#endif /* DEBUG_CHECKSUM */
+#endif /* DEBUG_IP_CHECKSUM */
 
-#if (DEBUG_IP >= 1 || DEBUG_CHECKSUM == 1)
+#if (DEBUG_IP >= 1 || DEBUG_IP_CHECKSUM == 1)
   printf("IP from %s to %s: Proto=%d, Len=%d, chksum=%04x/%04x\n",
          ip_addrstr(ip_hdr->srcip, srcip), ip_addrstr(ip_hdr->dstip, dstip),
          (int)ip_hdr->protocol, ip_len, (int)chk, (int)ip_hdr->chksum);
-#endif /* DEBUG_IP == 1 || DEBUG_CHECKSUM == 1 */
+#endif /* DEBUG_IP == 1 || DEBUG_IP_CHECKSUM == 1 */
 
   switch (ip_hdr->protocol) {
     case IP_PROTO_ICMP: /* 0x01 */

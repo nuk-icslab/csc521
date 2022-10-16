@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common.h"
+#include "util.h"
 
 static ipaddr_t dns_answer = 0;
 
@@ -79,9 +79,9 @@ static int dns_extract(uint8_t *pkt, uint8_t *mip) {
   /*---- question section */
   p = (byte *)&qp->payload;                        /* where question starts */
   if ((domlen = dns_unpack(name, p, pkt)) == -1) { /* unpack question name */
-    debug_print(DEBUG_DNS, "dns_unpack() error %d\n", -1);
+    DBG_PRINT(DEBUG_DNS, "dns_unpack() error %d\n", -1);
   }
-  debug_print(DEBUG_DNS, "[Question] %s\n", name);
+  DBG_PRINT(DEBUG_DNS, "[Question] %s\n", name);
   p += domlen + sizeof(struct qpart);
 
   /*---- answer section */
@@ -91,7 +91,7 @@ static int dns_extract(uint8_t *pkt, uint8_t *mip) {
    */
   while (nans-- > 0) {                               /* look at each answer */
     if ((domlen = dns_unpack(name, p, pkt)) == -1) { /* answer to unpack */
-      debug_print(DEBUG_DNS, "dns_unpack() error %d\n", -1);
+      DBG_PRINT(DEBUG_DNS, "dns_unpack() error %d\n", -1);
     }
     p += domlen;              /* account for string */
     rrp = (struct rrpart *)p; /* resource record here */
@@ -101,15 +101,15 @@ static int dns_extract(uint8_t *pkt, uint8_t *mip) {
         case DTYPE_A:
           SET_IP(mip, rrp->rdata); /* save IP # */
           dns_answer_count++;
-          debug_print(DEBUG_DNS, "[Answer %d] %s IN A %s\n", dns_answer_count,
-                      name, ip_addrstr((uint8_t *)mip, NULL));
+          DBG_PRINT(DEBUG_DNS, "[Answer %d] %s IN A %s\n", dns_answer_count,
+                    name, ip_addrstr((uint8_t *)mip, NULL));
           break;
         case DTYPE_CNAME:
           if (dns_unpack(cname, rrp->rdata, pkt) == -1) {
-            debug_print(DEBUG_DNS, "dns_unpack() error %d\n", -1);
+            DBG_PRINT(DEBUG_DNS, "dns_unpack() error %d\n", -1);
           }
-          debug_print(DEBUG_DNS, "[Answer %d] %s IN CNAME %s\n",
-                      dns_answer_count, name, cname);
+          DBG_PRINT(DEBUG_DNS, "[Answer %d] %s IN CNAME %s\n", dns_answer_count,
+                    name, cname);
           break;
       }
     }
@@ -137,14 +137,14 @@ static void dns_qinit(mydns_t *question) {
  */
 static int dns_packdom(byte *dst, char *src) {
   byte *h, *d;
-  const char delim = '.';
+  const char *delim = ".";
 
-  strncat(src, &delim, 1);
+  strcat(src, delim);
 
   if (DEBUG_DNS) printf("%s(): ", __func__);
 
   for (h = dst, d = h + 1; *src; src++) {
-    if (*src != delim) {
+    if (*src != delim[0]) {
       *d++ = (byte)*src; /* Copy the character to the destination */
     } else {
       *h = d - (h + 1);           /* Fill the length of label to the header */
@@ -172,7 +172,7 @@ static void dns_sendom(mypcap_t *p, char *mname, uint8_t *nameserver) {
   char namebuf[DOMSIZE];
   word domlen, ulen;
 
-  debug_print(DEBUG_DNS, "dns_sendom(): %s\n", mname);
+  DBG_PRINT(DEBUG_DNS, "dns_sendom(): %s\n", mname);
 
   strcpy(namebuf, mname);
 
@@ -185,7 +185,7 @@ static void dns_sendom(mypcap_t *p, char *mname, uint8_t *nameserver) {
   question_part->qclass = swap16(DCLASS_IN);
 
   ulen = sizeof(dnshead_t) + domlen + sizeof(struct qpart);
-  debug_print_data(DEBUG_DNS_DUMP, (uint8_t *)&question, ulen);
+  DBG_PRINT_BUF(DEBUG_DNS_DUMP, (uint8_t *)&question, ulen);
 
   myudp_param_t udp_param;
   udp_param.dstport = UDP_PORT_DNS;
@@ -238,9 +238,9 @@ void dns_main(mypcap_t *p, myip_hdr_t *ip_hdr, uint8_t *pkt, int len) {
 
   assert(swap16(udp_hdr->length) == len + sizeof(myudp_hdr_t));
 
-  debug_print(DEBUG_DNS, "Len=%d, %s->%s\n", len,
-              ip_addrstr(ip_hdr->srcip, NULL), ip_addrstr(ip_hdr->dstip, NULL));
-  debug_print_data(DEBUG_DNS_DUMP, pkt, len);
+  DBG_PRINT(DEBUG_DNS, "Len=%d, %s->%s\n", len, ip_addrstr(ip_hdr->srcip, NULL),
+            ip_addrstr(ip_hdr->dstip, NULL));
+  DBG_PRINT_BUF(DEBUG_DNS_DUMP, pkt, len);
 
   i = dns_extract(pkt, (uint8_t *)&ipaddr);
   switch (i) {
@@ -248,19 +248,18 @@ void dns_main(mypcap_t *p, myip_hdr_t *ip_hdr, uint8_t *pkt, int len) {
       dns_answer = ipaddr;
       break;
     case 3: /* name does not exist */
-      debug_print(DEBUG_DNS,
-                  "\tdns_extract() returnd that domain name not existed(%d)\n",
-                  i);
+      DBG_PRINT(DEBUG_DNS,
+                "\tdns_extract() returnd that domain name not existed(%d)\n",
+                i);
       break;
     case -1: /* no answers or response flag not set */
-      debug_print(
-          DEBUG_DNS,
-          "\tdns_extract() returnd that no answers or response flag not "
-          "set(%d)\n",
-          i);
+      DBG_PRINT(DEBUG_DNS,
+                "\tdns_extract() returnd that no answers or response flag not "
+                "set(%d)\n",
+                i);
       break;
     default: /* dunno */
-      debug_print(DEBUG_DNS, "\tdns_extract() return %08x\n", i);
+      DBG_PRINT(DEBUG_DNS, "\tdns_extract() return %08x\n", i);
       print_data(pkt, len);
       return;
   }

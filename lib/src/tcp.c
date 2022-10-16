@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "common.h"
+#include "util.h"
 
 #if (DEBUG_TCP == 1)
 /*
@@ -88,7 +88,7 @@ void tcp_main(mypcap_t *p, uint8_t *pkt, int len) {
          tcp_flagstr(tcp_hdr->flags), srcport, dstport, tcp_len,
          (int)tcp_hdr->chksum, chk);
 #endif /* DEBUG_TCP */
-#if (DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_TCP_DUMP == 1)
+#if (DEBUG_TCP_DUMP == 1)
   print_data((uint8_t *)pkt, len);
 #endif /* DEBUG_TCP_DUMP */
 }
@@ -124,7 +124,7 @@ void tcp_send(mypcap_t *p, mytcp_param_t tcp_param, uint8_t *payload,
          (int)tcp_param.dstport, tcp_flagstr(tcp_hdr->flags), pkt_len,
          tcp_hdr->chksum);
 #endif /* DEBUG_TCP */
-#if (DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_TCP_DUMP == 1)
+#if (DEBUG_TCP_DUMP == 1)
   print_data((uint8_t *)pkt, pkt_len);
 #endif /* DEBUG_TCP_DUMP */
 

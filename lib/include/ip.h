@@ -5,7 +5,25 @@
 
 #include "mypcap.h"
 
-#define MAX_IP_PAYLOAD_LEN (MAX_CAP_LEN - sizeof(myip_hdr_t))
+/*
+ * Control flags
+ */
+#ifndef DEBUG_IP
+#define DEBUG_IP 0
+#endif  // DEBUG_IP
+#ifndef DEBUG_IP_CHECKSUM
+#define DEBUG_IP_CHECKSUM 0
+#endif  // DEBUG_IP_CHECKSUM
+#ifndef DEBUG_IP_DUMP
+#define DEBUG_IP_DUMP 0
+#endif  // DEBUG_IP_DUMP
+
+/*====================*
+ ***** Parameters *****
+ *====================*/
+extern uint8_t myipaddr[IPV4_ADDR_LEN];
+extern uint8_t myrouterip[IPV4_ADDR_LEN];
+extern uint8_t mynetmask[IPV4_ADDR_LEN];
 
 /*============================*
  ***** Protocol Constants *****
@@ -13,6 +31,7 @@
 #define IP_VERSION 4
 #define IP_MIN_HLEN 5
 #define IP_MAX_TTL 255
+#define MAX_IP_PAYLOAD_LEN (MAX_CAP_LEN - sizeof(myip_hdr_t))
 
 /*=========================*
  ***** Protocol Format *****

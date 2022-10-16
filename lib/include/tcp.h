@@ -7,6 +7,19 @@
  ***	TCP
  ***/
 
+/*
+ * Control flags
+ */
+#ifndef DEBUG_TCP
+#define DEBUG_TCP 0
+#endif  // DEBUG_TCP
+#ifndef DEBUG_TCP_FILTER
+#define DEBUG_TCP_FILTER 0
+#endif  // DEBUG_TCP_FILTER
+#ifndef DEBUG_TCP_DUMP
+#define DEBUG_TCP_DUMP 0
+#endif  // DEBUG_TCP_DUMP
+
 /*====================*
  ***** Parameters *****
  *====================*/

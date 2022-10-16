@@ -3,7 +3,24 @@
 
 #include <pcap.h>
 
-#include "common.h"
+#include "util.h"
+
+/*
+ * Control flags
+ */
+#ifndef DEBUG_PACKET
+#define DEBUG_PACKET 0
+#endif  // DEBUG_PACKET
+#ifndef DEBUG_PACKET_DUMP
+#define DEBUG_PACKET_DUMP 0
+#endif  // DEBUG_PACKET_DUMP
+
+/*
+ * For libpcap that doesn't support WinPcap
+ */
+#ifndef PCAP_OPENFLAG_PROMISCUOUS
+#define PCAP_OPENFLAG_PROMISCUOUS 1
+#endif  // PCAP_OPENFLAG_PROMISCUOUS
 
 /*====================*
  ***** Parameters *****

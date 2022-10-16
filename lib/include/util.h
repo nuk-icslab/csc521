@@ -1,5 +1,5 @@
-#ifndef __COMMON_H__
-#define __COMMON_H__
+#ifndef __UTIL_H__
+#define __UTIL_H__
 
 #include <errno.h>
 #include <pcap/pcap.h>
@@ -7,52 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-
-/*=======================*
- ***** Control Flags *****
- ========================*/
-
-#define FG_NATIVE_CYGWIN 1
-
-#define FG_ARP_SEND_REQUEST 0
-#define FG_ICMP_SEND_REQUEST 1
-#define FG_DNS_QUERY 1
-#define FG_DNS_DO_PING 1
-#define FG_TCP_SEND_SYN 1
-
-#define DEBUG_PACKET 0
-#define DEBUG_PACKET_DUMP 0
-
-#define DEBUG_ARP 1
-#define DEBUG_ARP_REQUEST 1
-#define DEBUG_ARP_REPLY 1
-#define DEBUG_ARP_DUMP 0
-#define DEBUG_ARPCACHE 1
-
-#define DEBUG_CHECKSUM 0
-#define DEBUG_IP 0
-#define DEBUG_IP_DUMP 0
-
-#define DEBUG_ICMP 1
-#define DEBUG_ICMP_DUMP 0
-
-#define DEBUG_UDP 1
-#define DEBUG_UDP_FILTER 1
-#define DEBUG_UDP_DUMP 0
-
-#define DEBUG_DNS 1
-#define DEBUG_DNS_DUMP 1
-
-#define DEBUG_TCP 1
-#define DEBUG_TCP_FILTER 1
-#define DEBUG_TCP_DUMP 0
-
-/*
- * For libpcap that doesn't support WinPcap
- */
-#ifndef PCAP_OPENFLAG_PROMISCUOUS
-#define PCAP_OPENFLAG_PROMISCUOUS 1
-#endif
 
 /*===========================*
  ***** Common Parameters *****
@@ -84,7 +38,7 @@
 #define MAX_LINEBUF 256
 
 /*=================================================*
- ***** Assigned Numbers and Protocol Prameters *****
+ ***** Assigned Numbers and Protocol Parameters *****
  *=================================================*/
 #define ETH_IP 0x0008
 #define ETH_ARP 0x0608
@@ -100,19 +54,6 @@ typedef uint32_t longword;
 #define COPY_ETH_ADDR(dst, src) (memcpy((dst), (src), ETH_ADDR_LEN))
 #define COPY_IPV4_ADDR(dst, src) (memcpy((dst), (src), IPV4_ADDR_LEN))
 
-/*===============================*
- ***** Global Configurations *****
- *===============================*/
-extern uint8_t myethaddr[ETH_ADDR_LEN];
-extern uint8_t myipaddr[IPV4_ADDR_LEN];
-extern uint8_t myrouterip[IPV4_ADDR_LEN];
-extern uint8_t mynetmask[IPV4_ADDR_LEN];
-
-extern uint8_t defarpip[IPV4_ADDR_LEN];
-extern uint8_t defpingip[IPV4_ADDR_LEN];
-extern uint8_t defdnsip[IPV4_ADDR_LEN];
-extern char *defdnsquery;
-
 /*===================*
  ***** Utilities *****
  *===================*/
@@ -127,15 +68,16 @@ extern void print_ip(uint8_t *ip, char *msg);
 extern void print_data(const uint8_t *data, int len);
 extern char *trimright(char *str);
 
-extern uint16_t swap16(uint16_t s);
-extern uint32_t swap32(uint32_t val);
+extern uint32_t swap32(uint32_t x);
+extern uint16_t swap16(uint16_t x);
 extern uint16_t checksum(uint8_t *ptr, int len);
 
-#define debug_print(flag, fmt, ...)                          \
+#define DBG_PRINT(flag, fmt, ...)                            \
   do {                                                       \
     if ((flag)) printf("%s(): " fmt, __func__, __VA_ARGS__); \
   } while (0)
-#define debug_print_data(flag, buf, len)              \
+
+#define DBG_PRINT_BUF(flag, buf, len)                 \
   do {                                                \
     if ((flag)) {                                     \
       printf("%s(): Content of buffer:\n", __func__); \
@@ -150,4 +92,4 @@ extern uint16_t checksum(uint8_t *ptr, int len);
 #define GET_NET_ID(ip) ((*((ipaddr_t *)(ip))) & (*((ipaddr_t *)mynetmask)))
 #define IS_MY_NET(ip) ((GET_NET_ID(ip)) == GET_NET_ID(myipaddr))
 
-#endif /* __COMMON_H__ */
+#endif /* __UTIL_H__ */

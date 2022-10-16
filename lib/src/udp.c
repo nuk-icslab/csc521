@@ -4,9 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "common.h"
 #include "dns.h"
 #include "ip.h"
+#include "util.h"
 
 /*
  * udp_checksum() - Calculate checksum of UDP datagram with IPv4 pseudo header
@@ -76,7 +76,7 @@ void udp_main(mypcap_t *p, uint8_t *pkt, int len) {
   printf("UDP: %d->%d, Len=%d, chksum=%04x/%04x\n", srcport, dstport, len,
          (int)udp_hdr->chksum, chk);
 #endif /* DEBUG_UDP == 1 || DEBUG_CHECKSUM == 1*/
-#if (DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_UDP_DUMP == 1)
+#if (DEBUG_UDP_DUMP == 1)
   print_data((uint8_t *)pkt, len);
 #endif /* DEBUG_UDP_DUMP */
 
@@ -115,7 +115,7 @@ void udp_send(mypcap_t *p, myudp_param_t udp_param, uint8_t *payload,
          ip_addrstr(ip_param->dstip, NULL), (int)udp_param.dstport, pkt_len,
          udp_hdr->chksum);
 #endif /* DEBUG_UDP */
-#if (DEBUG_PACKET_DUMP == 0 && DEBUG_IP_DUMP == 0 && DEBUG_UDP_DUMP == 1)
+#if (DEBUG_UDP_DUMP == 1)
   print_data((uint8_t *)pkt, pkt_len);
 #endif /* DEBUG_UDP_DUMP */
   ip_send(p, ip_param, pkt, pkt_len);

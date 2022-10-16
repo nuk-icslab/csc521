@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "common.h"
+#include "util.h"
 
 #define MAX_ARPIP_N 8
 

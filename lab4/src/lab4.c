@@ -3,11 +3,13 @@
 #include <stdlib.h>
 
 #include "arp.h"
-#include "common.h"
 #include "dns.h"
 #include "icmp.h"
 #include "mypcap.h"
 #include "tcp.h"
+#include "util.h"
+
+extern char *defdnsquery;
 
 /**
  * main_proc() - the main thread
