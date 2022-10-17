@@ -3,7 +3,7 @@ CFLAGS=-g -O2 -Wall -fsanitize=address
 LDFLAGS=-lpcap -fsanitize=address
 SRCDIR=src
 
-.PHONY: all
+.PHONY: all clean
 all: testprog testrecv testsend
 
 testprog: $(SRCDIR)/testprog.c
