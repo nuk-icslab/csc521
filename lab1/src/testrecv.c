@@ -66,9 +66,7 @@ int main() {
                           1000,                       // read timeout
                           errbuf                      // error buffer
                           )) == NULL) {
-    fprintf(stderr,
-            "\nUnable to open the adapter. %s is not supported by libpcap\n",
-            d->name);
+    fprintf(stderr, "\nUnable to open the adapter: %s\n", errbuf);
     /* Free the device list */
     pcap_freealldevs(alldevs);
     return -1;

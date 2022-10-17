@@ -28,9 +28,7 @@ int main(int argc, char **argv) {
            1000,                       // read timeout
            errbuf                      // error buffer
            )) == NULL) {
-    fprintf(stderr,
-            "\nUnable to open the adapter. %s is not supported by libpcap\n",
-            argv[1]);
+    fprintf(stderr, "\nUnable to open the adapter: %s\n", errbuf);
     return 1;
   }
 
@@ -64,6 +62,8 @@ int main(int argc, char **argv) {
     fprintf(stderr, "\nError sending the packet: %s\n", pcap_geterr(fp));
     return 1;
   }
+
+  pcap_close(fp);
 
   return 0;
 }
