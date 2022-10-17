@@ -8,6 +8,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "types.h"
+
 /*===========================*
  ***** Common Parameters *****
  *===========================*/
@@ -45,11 +47,6 @@
 
 #define ETH_ADDR_LEN 6
 #define IPV4_ADDR_LEN 4
-
-typedef uint32_t ipaddr_t;
-typedef uint8_t byte;
-typedef uint16_t word;
-typedef uint32_t longword;
 
 #define COPY_ETH_ADDR(dst, src) (memcpy((dst), (src), ETH_ADDR_LEN))
 #define COPY_IPV4_ADDR(dst, src) (memcpy((dst), (src), IPV4_ADDR_LEN))
