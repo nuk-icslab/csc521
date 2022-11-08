@@ -6,13 +6,13 @@
 
 #include "arp.h"
 #include "icmp.h"
-#include "mypcap.h"
+#include "netdevice.h"
 #include "util.h"
 
 /**
  * main_proc() - the main thread
  **/
-int main_proc(mypcap_t *p) {
+int main_proc(netdevice_t *p) {
   char buf[MAX_LINEBUF];
   ipaddr_t ip;
   int key;
@@ -29,7 +29,7 @@ int main_proc(mypcap_t *p) {
     /*
      * Proccess packets in the capture buffer
      */
-    if (mypcap_proc(p) == -1) {
+    if (netdevice_rx(p) == -1) {
       break;
     }
 
@@ -58,21 +58,21 @@ int main_proc(mypcap_t *p) {
 
 int main(int argc, char *argv[]) {
   char devname[MAX_LINEBUF], errbuf[PCAP_ERRBUF_SIZE];
-  mypcap_t *p;
+  netdevice_t *p;
 
   /*
    * Get the device name of capture interface
    */
   if (argc == 2) {
     strcpy(devname, argv[1]);
-  } else if (mypcap_getdevice(0, devname) == MYPCAP_ERR) {
+  } else if (netdevice_getdevice(0, devname) == NETDEVICE_ERR) {
     return -1;
   }
 
   /*
    * Open the specified interface
    */
-  if ((p = mypcap_open(devname, errbuf)) == NULL) {
+  if ((p = netdevice_open(devname, errbuf)) == NULL) {
     fprintf(stderr, "Failed to open capture interface\n\t%s\n", errbuf);
     return -1;
   }
@@ -81,13 +81,13 @@ int main(int argc, char *argv[]) {
   /*
    * Register the packet handler callback of specific protocol
    */
-  mypcap_add_prot(p, ETH_ARP, (mypcap_handler)&arp_main);
-  mypcap_add_prot(p, ETH_IP, (mypcap_handler)&ip_main);
+  netdevice_add_proto(p, ETH_ARP, (ptype_handler)&arp_main);
+  netdevice_add_proto(p, ETH_IP, (ptype_handler)&ip_main);
 
   main_proc(p);
 
   /*
    * Clean up the resources
    */
-  mypcap_close(p);
+  netdevice_close(p);
 }

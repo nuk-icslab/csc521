@@ -2,7 +2,7 @@
 #define __DNS_H__
 
 #include "ip.h"
-#include "mypcap.h"
+#include "netdevice.h"
 #include "udp.h"
 #include "util.h"
 
@@ -120,7 +120,7 @@ typedef struct {
 /*========================*
  ***** Public Methods *****
  *========================*/
-extern void dns_main(mypcap_t *p, myip_hdr_t *ip_hdr, uint8_t *pkt, int len);
-extern ipaddr_t resolve(mypcap_t *p, char *name);
+extern void dns_main(netdevice_t *p, myip_hdr_t *ip_hdr, uint8_t *pkt, int len);
+extern ipaddr_t resolve(netdevice_t *p, char *name);
 
 #endif /* __DNS_H__ */

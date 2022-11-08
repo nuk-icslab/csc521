@@ -5,7 +5,7 @@
 
 #include "arp.h"
 #include "icmp.h"
-#include "mypcap.h"
+#include "netdevice.h"
 #include "tcp.h"
 #include "udp.h"
 #include "util.h"
@@ -26,7 +26,7 @@ uint16_t ip_checksum(myip_hdr_t *ip) {
 /*
  * ip_main() - The handler to process the packets from the bottom layer.
  */
-void ip_main(mypcap_t *p, uint8_t *pkt, int len) {
+void ip_main(netdevice_t *p, uint8_t *pkt, int len) {
   myip_hdr_t *ip_hdr;
 
   ip_hdr = (myip_hdr_t *)pkt;
@@ -70,7 +70,7 @@ void ip_main(mypcap_t *p, uint8_t *pkt, int len) {
  * ip_send() - Send out a IP packet to the bottom layer with the payload from
  * the upper layer.
  */
-void ip_send(mypcap_t *p, myip_param_t *ip_param, uint8_t *payload,
+void ip_send(netdevice_t *p, myip_param_t *ip_param, uint8_t *payload,
              int payload_len) {
   int hdr_len = sizeof(myip_hdr_t);
   int pkt_len = payload_len + hdr_len;

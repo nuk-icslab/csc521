@@ -2,7 +2,7 @@
 #define __ARP_H__
 
 #include "ip.h"
-#include "mypcap.h"
+#include "netdevice.h"
 #include "util.h"
 
 /*
@@ -55,12 +55,12 @@ typedef struct {
 /*========================*
  ***** Public Methods *****
  *========================*/
-extern void arp_request(mypcap_t *p, uint8_t *ip);
-extern void arp_reply(mypcap_t *p, uint8_t *dsteth, uint8_t *dstip);
-extern void arp_main(mypcap_t *p, uint8_t *pkt, unsigned int len);
-extern void arp_send(mypcap_t *p, uint8_t *dst_ip, uint16_t eth_type,
+extern void arp_request(netdevice_t *p, uint8_t *ip);
+extern void arp_reply(netdevice_t *p, uint8_t *dsteth, uint8_t *dstip);
+extern void arp_main(netdevice_t *p, uint8_t *pkt, unsigned int len);
+extern void arp_send(netdevice_t *p, uint8_t *dst_ip, uint16_t eth_type,
                      uint8_t *payload, int payload_len);
-extern void arp_resend(mypcap_t *p);
+extern void arp_resend(netdevice_t *p);
 
 /*==============================*
  ***** Methods of ARP cache *****

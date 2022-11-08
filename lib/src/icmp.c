@@ -46,7 +46,7 @@ static char *ICMP_CODE[] = {
 /**
  * icmp_main() - The entry point to receive packets from the bottom layer.
  **/
-void icmp_main(mypcap_t *p, uint8_t *pkt, int len) {
+void icmp_main(netdevice_t *p, uint8_t *pkt, int len) {
   myip_hdr_t *ip_hdr;
   myicmp_hdr_t *icmp_hdr;
 
@@ -90,7 +90,7 @@ void icmp_main(mypcap_t *p, uint8_t *pkt, int len) {
 /**
  * icmp_ping() - To send a ICMP echo request to the desired IP address.
  **/
-void icmp_ping(mypcap_t *p, uint8_t *dstip) {
+void icmp_ping(netdevice_t *p, uint8_t *dstip) {
   uint8_t pktbuf[MAX_IP_PAYLOAD_LEN];
   myicmp_hdr_t *icmp_hdr = (myicmp_hdr_t *)pktbuf;
   myip_param_t ip_param;

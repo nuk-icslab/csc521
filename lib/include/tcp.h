@@ -62,8 +62,8 @@ typedef struct {
 /*========================*
  ***** Public Methods *****
  *========================*/
-extern void tcp_main(mypcap_t *p, uint8_t *pkt, int len);
-extern void tcp_send(mypcap_t *p, mytcp_param_t tcp_param, uint8_t *payload,
+extern void tcp_main(netdevice_t *p, uint8_t *pkt, int len);
+extern void tcp_send(netdevice_t *p, mytcp_param_t tcp_param, uint8_t *payload,
                      int payload_len);
 
 /*===========================*

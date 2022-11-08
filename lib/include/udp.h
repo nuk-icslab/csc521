@@ -48,8 +48,8 @@ typedef struct {
 /*========================*
  ***** Public Methods *****
  *========================*/
-extern void udp_main(mypcap_t *p, uint8_t *pkt, int len);
-extern void udp_send(mypcap_t *p, myudp_param_t udp_param, uint8_t *payload,
+extern void udp_main(netdevice_t *p, uint8_t *pkt, int len);
+extern void udp_send(netdevice_t *p, myudp_param_t udp_param, uint8_t *payload,
                      int payload_len);
 
 #endif /* __UDP_H__ */

@@ -3,7 +3,7 @@
 
 #include <pcap.h>
 
-#include "mypcap.h"
+#include "netdevice.h"
 
 /*
  * Control flags
@@ -62,9 +62,9 @@ typedef struct {
   uint8_t srcip[IPV4_ADDR_LEN];
 } myip_param_t;
 
-extern void ip_send(mypcap_t *p, myip_param_t *ip_param, uint8_t *payload,
+extern void ip_send(netdevice_t *p, myip_param_t *ip_param, uint8_t *payload,
                     int payload_len);
-extern void ip_main(mypcap_t *p, uint8_t *pkt, int len);
+extern void ip_main(netdevice_t *p, uint8_t *pkt, int len);
 
 /*===========================*
  ***** Private Utilities *****

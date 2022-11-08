@@ -1,5 +1,5 @@
-#ifndef MYPCAP_H
-#define MYPCAP_H
+#ifndef NETDEVICE_H
+#define NETDEVICE_H
 
 #include <pcap.h>
 
@@ -45,26 +45,26 @@
 /*===================*
  ***** Constants *****
  *===================*/
-#define MYPCAP_ERR -1
+#define NETDEVICE_ERR -1
 
 /*===================================*
  ***** Data Structures and Types *****
  *===================================*/
-typedef struct mypcap mypcap_t;
-typedef struct mypcap_prot mypcap_prot_t;
-typedef void (*mypcap_handler)(mypcap_t *fp, const uint8_t *pkt,
+typedef struct netdevice netdevice_t;
+typedef struct ptype ptype_t;
+typedef void (*ptype_handler)(netdevice_t *fp, const uint8_t *pkt,
                                unsigned int len);
 
-struct mypcap {
+struct netdevice {
   pcap_t *capture_handle;
-  mypcap_prot_t *plist;
+  ptype_t *plist;
 };
 
-struct mypcap_prot {
+struct ptype {
   uint16_t eth_type;
-  mypcap_handler callback;
-  mypcap_t *p;
-  struct mypcap_prot *next;
+  ptype_handler callback;
+  netdevice_t *p;
+  struct ptype *next;
 };
 
 /*=========================*
@@ -79,13 +79,13 @@ typedef struct {
 /*========================*
  ***** Public Methods *****
  *========================*/
-extern int mypcap_getdevice(unsigned int defn, char *devname);
-extern mypcap_t *mypcap_open(char *devname, char *errbuf);
-extern int mypcap_add_prot(mypcap_t *p, uint16_t eth_type,
-                           mypcap_handler callback);
-extern int mypcap_proc(mypcap_t *p);
-extern int mypcap_send(mypcap_t *p, eth_hdr_t eth_hdr, uint8_t *payload,
+extern int netdevice_getdevice(unsigned int defn, char *devname);
+extern netdevice_t *netdevice_open(char *devname, char *errbuf);
+extern int netdevice_add_proto(netdevice_t *p, uint16_t eth_type,
+                           ptype_handler callback);
+extern int netdevice_rx(netdevice_t *p);
+extern int netdevice_xmit(netdevice_t *p, eth_hdr_t eth_hdr, uint8_t *payload,
                        int payload_len);
-extern void mypcap_close(mypcap_t *p);
+extern void netdevice_close(netdevice_t *p);
 
-#endif
+#endif // NETDEVICE_h

@@ -166,7 +166,7 @@ static int dns_packdom(byte *dst, char *src) {
  * dns_sendom() - put together a domain lookup packet and send it
  *	. uses port 53, num is used as identifier
  */
-static void dns_sendom(mypcap_t *p, char *mname, uint8_t *nameserver) {
+static void dns_sendom(netdevice_t *p, char *mname, uint8_t *nameserver) {
   mydns_t question;
   struct qpart *question_part;
   char namebuf[DOMSIZE];
@@ -200,7 +200,7 @@ static void dns_sendom(mypcap_t *p, char *mname, uint8_t *nameserver) {
  * Returns the IP of the machine record for future reference.
  * Returns 0 if name is unresolvable right now
  */
-ipaddr_t resolve(mypcap_t *p, char *name) {
+ipaddr_t resolve(netdevice_t *p, char *name) {
   time_t now, later;
   longword ip_address;
   int trycount = MAX_DNS_TRY;
@@ -212,7 +212,7 @@ ipaddr_t resolve(mypcap_t *p, char *name) {
     now = time(NULL);
     later = now + DEF_DNS_SLEEP;
     do {
-      if (mypcap_proc(p) == -1) {
+      if (netdevice_rx(p) == -1) {
         break;
       }
       if (dns_answer != 0) {
@@ -228,7 +228,7 @@ ipaddr_t resolve(mypcap_t *p, char *name) {
 /*
  * dns_main() - The main procedure to process incoming DNS message
  */
-void dns_main(mypcap_t *p, myip_hdr_t *ip_hdr, uint8_t *pkt, int len) {
+void dns_main(netdevice_t *p, myip_hdr_t *ip_hdr, uint8_t *pkt, int len) {
   int i;
   ipaddr_t ipaddr; /* returned ip */
 

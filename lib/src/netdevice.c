@@ -1,4 +1,4 @@
-#include "mypcap.h"
+#include "netdevice.h"
 
 #include <pcap.h>
 #include <stdlib.h>
@@ -6,24 +6,23 @@
 
 #include "util.h"
 
-static void capture_callback(unsigned char *arg,
+static void _capture_callback(unsigned char *arg,
                              const struct pcap_pkthdr *header,
                              const unsigned char *content);
 
 /**
- * mypcap_getdevice() - Interactively ask user what interface to use
+ * netdevice_getdevice() - Interactively ask user what interface to use
  * If defn is non zero, will select desired interface
  **/
-int mypcap_getdevice(unsigned int defn, char *devname) {
+int netdevice_getdevice(unsigned int defn, char *devname) {
   pcap_if_t *alldevs, *d;
   unsigned int selected_dev, dev_cnt = 0;
   char errbuf[PCAP_ERRBUF_SIZE];
   char buf[MAX_LINEBUF];
 
   if (pcap_findalldevs(&alldevs, errbuf) == -1) {
-    fprintf(stderr, "mypcap_getdevice(): Error in pcap_findalldevs: %s\n",
-            errbuf);
-    return MYPCAP_ERR;
+    fprintf(stderr, "%s(): Error in pcap_findalldevs: %s\n", __func__, errbuf);
+    return NETDEVICE_ERR;
   }
 
   if (defn > 0) {
@@ -52,7 +51,7 @@ int mypcap_getdevice(unsigned int defn, char *devname) {
        * Free the resources of the device list
        */
       pcap_freealldevs(alldevs);
-      return MYPCAP_ERR;
+      return NETDEVICE_ERR;
     }
 
     printf("Enter the interface number (1-%d):", dev_cnt);
@@ -62,7 +61,7 @@ int mypcap_getdevice(unsigned int defn, char *devname) {
 
   if (selected_dev < 1 || selected_dev > dev_cnt) {
     printf("\nInterface number out of range.\n");
-    return MYPCAP_ERR;
+    return NETDEVICE_ERR;
   } else {
     /*
      * Jump to the selected interface
@@ -79,11 +78,11 @@ int mypcap_getdevice(unsigned int defn, char *devname) {
 }
 
 /**
- * mypcap_open() - Open a capture interface and initialize necessary resources
- * The capture interface will be put into non-blocking mode
+ * netdevice_open() - Open a capture interface and initialize necessary
+ * resources The capture interface will be put into non-blocking mode
  */
-mypcap_t *mypcap_open(char *devname, char *errbuf) {
-  mypcap_t *p = (mypcap_t *)calloc(1, sizeof(mypcap_t));
+netdevice_t *netdevice_open(char *devname, char *errbuf) {
+  netdevice_t *p = (netdevice_t *)calloc(1, sizeof(netdevice_t));
   p->plist = NULL;
 
   /*
@@ -101,7 +100,7 @@ mypcap_t *mypcap_open(char *devname, char *errbuf) {
    * Put the capture device into non-blocking mode
    */
   if (pcap_setnonblock(p->capture_handle, 1, errbuf) != 0) {
-    mypcap_close(p);
+    netdevice_close(p);
     return NULL;
   }
 
@@ -109,38 +108,39 @@ mypcap_t *mypcap_open(char *devname, char *errbuf) {
 }
 
 /**
- * mypcap_add_prot() - Register a protocol handler of the upper layer with
+ * netdevice_add_proto() - Register a protocol handler of the upper layer with
  * specified ethertype
  */
-int mypcap_add_prot(mypcap_t *p, uint16_t eth_type, mypcap_handler callback) {
-  mypcap_prot_t *new_prot;
-  new_prot = (mypcap_prot_t *)calloc(1, sizeof(mypcap_prot_t));
-  new_prot->eth_type = eth_type;
-  new_prot->callback = callback;
-  new_prot->p = p;
+int netdevice_add_proto(netdevice_t *p, uint16_t eth_type,
+                        ptype_handler callback) {
+  ptype_t *new_ptype;
+  new_ptype = (ptype_t *)calloc(1, sizeof(ptype_t));
+  new_ptype->eth_type = eth_type;
+  new_ptype->callback = callback;
+  new_ptype->p = p;
 
   /*
    * Append new node to the linked list
    */
-  new_prot->next = p->plist;
-  p->plist = new_prot;
+  new_ptype->next = p->plist;
+  p->plist = new_ptype;
 
   return 0;
 }
 
 /**
- * mypcap_proc() - Process all of the packets in the capture buffer.
+ * netdevice_rx() - Process all of the packets in the capture buffer.
  * The detailed procedure to deal the packets is in capture_callback()
  */
-int mypcap_proc(mypcap_t *p) {
+int netdevice_rx(netdevice_t *p) {
   /*
    * Process all of the packet in the capture buffer.
    * pcap_dispatch() may return after capture buffer timeout.
    */
-  int pkt_cnt = pcap_dispatch(p->capture_handle, -1, capture_callback,
+  int pkt_cnt = pcap_dispatch(p->capture_handle, -1, _capture_callback,
                               (unsigned char *)p);
   if (pkt_cnt < 0) {
-    fprintf(stderr, "mypcap_proc(): Failed to read the packets: %s\n",
+    fprintf(stderr, "%s(): Failed to read the packets: %s\n", __func__,
             pcap_geterr(p->capture_handle));
     return -1;
   }
@@ -149,12 +149,12 @@ int mypcap_proc(mypcap_t *p) {
 }
 
 /**
- * mypcap_send() - Send out an Ethernet frame with the given Ethernet header
+ * netdevice_xmit() - Send out an Ethernet frame with the given Ethernet header
  * and payloads. The frame will be padded with '\0' to meet the minimal length
  * of the Ethernet frame.
  */
-int mypcap_send(mypcap_t *p, eth_hdr_t eth_hdr, uint8_t *payload,
-                int payload_len) {
+int netdevice_xmit(netdevice_t *p, eth_hdr_t eth_hdr, uint8_t *payload,
+                   int payload_len) {
   uint8_t buf[MAX_CAP_LEN];
   const int hdr_len = sizeof(eth_hdr_t);
   int pktlen = hdr_len + payload_len;
@@ -187,7 +187,7 @@ int mypcap_send(mypcap_t *p, eth_hdr_t eth_hdr, uint8_t *payload,
 #endif /* DEBUG_PACKET */
 
   if (pcap_sendpacket(p->capture_handle, buf, pktlen) != 0) {
-    fprintf(stderr, "\nmypcap_send(): Failed to send the packet: %s\n",
+    fprintf(stderr, "\n%s(): Failed to send the packet: %s\n", __func__,
             pcap_geterr(p->capture_handle));
     return -1;
   }
@@ -195,11 +195,11 @@ int mypcap_send(mypcap_t *p, eth_hdr_t eth_hdr, uint8_t *payload,
 }
 
 /**
- * mypcap_close() - Close the capture interface and release all of the
+ * netdevice_close() - Close the capture interface and release all of the
  * resources.
  */
-void mypcap_close(mypcap_t *p) {
-  mypcap_prot_t *d, *tmp;
+void netdevice_close(netdevice_t *p) {
+  ptype_t *d, *tmp;
 
   /*
    * Free the space of packet list
@@ -221,17 +221,17 @@ void mypcap_close(mypcap_t *p) {
 }
 
 /**
- * capture_callback() - The main body to handle received packets.
+ * _capture_callback() - The main body to handle received packets.
  * The Ethernet frame header of arrived packets will be parsed.
  * The payload of packets will be distributed based on their ethertype.
  * The handler of the upper layer won't be able to see the content of the
  * Ethernet header.
  */
-static void capture_callback(unsigned char *arg,
+static void _capture_callback(unsigned char *arg,
                              const struct pcap_pkthdr *header,
                              const unsigned char *pkt_data) {
-  mypcap_t *p = (mypcap_t *)(arg);
-  mypcap_prot_t *d;
+  netdevice_t *p = (netdevice_t *)(arg);
+  ptype_t *d;
   eth_hdr_t *eth_hdr;
   const uint8_t *payload = pkt_data + sizeof(eth_hdr_t);
   int pktlen, payload_len;

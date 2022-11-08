@@ -2,7 +2,7 @@
 #define __ICMP_H__
 
 #include "ip.h"
-#include "mypcap.h"
+#include "netdevice.h"
 
 /*
  * Control flags
@@ -43,7 +43,7 @@ typedef struct {
 /*========================*
  ***** Public Methods *****
  *========================*/
-extern void icmp_main(mypcap_t *p, uint8_t *pkt, int len);
-extern void icmp_ping(mypcap_t *p, uint8_t *dstip);
+extern void icmp_main(netdevice_t *p, uint8_t *pkt, int len);
+extern void icmp_ping(netdevice_t *p, uint8_t *dstip);
 
 #endif /* __ICMP_H__ */

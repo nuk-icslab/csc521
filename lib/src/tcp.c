@@ -54,7 +54,7 @@ static uint16_t tcp_checksum(myip_param_t *ip_param, uint8_t *pkt, int tcplen) {
 /*
  * tcp_main(): The main procedure for incoming TCP segments
  */
-void tcp_main(mypcap_t *p, uint8_t *pkt, int len) {
+void tcp_main(netdevice_t *p, uint8_t *pkt, int len) {
   myip_hdr_t *ip_hdr;
   mytcp_hdr_t *tcp_hdr;
   int ip_hdr_len;
@@ -93,7 +93,7 @@ void tcp_main(mypcap_t *p, uint8_t *pkt, int len) {
 #endif /* DEBUG_TCP_DUMP */
 }
 
-void tcp_send(mypcap_t *p, mytcp_param_t tcp_param, uint8_t *payload,
+void tcp_send(netdevice_t *p, mytcp_param_t tcp_param, uint8_t *payload,
               int payload_len) {
   int hdr_len = sizeof(mytcp_hdr_t);
   int pkt_len = payload_len + hdr_len;

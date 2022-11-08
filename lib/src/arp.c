@@ -25,7 +25,7 @@ struct {
 /**
  * arp_request() - Send a ARP request for <IP> address
  **/
-void arp_request(mypcap_t *p, uint8_t *ip) {
+void arp_request(netdevice_t *p, uint8_t *ip) {
   eth_hdr_t eth_hdr;
   myarp_t pkt;
 
@@ -49,7 +49,7 @@ void arp_request(mypcap_t *p, uint8_t *ip) {
   arp_dump(&pkt);
 #endif /* DEBUG_ARP_REQUEST */
 
-  if (mypcap_send(p, eth_hdr, (uint8_t *)&pkt, sizeof(pkt)) != 0) {
+  if (netdevice_xmit(p, eth_hdr, (uint8_t *)&pkt, sizeof(pkt)) != 0) {
     fprintf(stderr, "Failed to send ARP request.\n");
   }
 }
@@ -57,7 +57,7 @@ void arp_request(mypcap_t *p, uint8_t *ip) {
 /**
  * arp_reply() - Reply the configured hardware address
  **/
-void arp_reply(mypcap_t *p, uint8_t *dsteth, uint8_t *dstip) {
+void arp_reply(netdevice_t *p, uint8_t *dsteth, uint8_t *dstip) {
   eth_hdr_t eth_hdr;
   myarp_t pkt;
 
@@ -79,7 +79,7 @@ void arp_reply(mypcap_t *p, uint8_t *dsteth, uint8_t *dstip) {
   printf("arp_reply() to %s\n", ip_addrstr(dstip, NULL));
 #endif /* DEBUG_ARP_REPLY */
 
-  if (mypcap_send(p, eth_hdr, (uint8_t *)&pkt, sizeof(pkt)) != 0) {
+  if (netdevice_xmit(p, eth_hdr, (uint8_t *)&pkt, sizeof(pkt)) != 0) {
     fprintf(stderr, "Failed to send ARP reply.\n");
   }
 }
@@ -87,7 +87,7 @@ void arp_reply(mypcap_t *p, uint8_t *dsteth, uint8_t *dstip) {
 /**
  * arp_main() - The handler for incoming APR packets
  **/
-void arp_main(mypcap_t *p, uint8_t *pkt, unsigned int len) {
+void arp_main(netdevice_t *p, uint8_t *pkt, unsigned int len) {
   myarp_t *arp;
 
   arp = (myarp_t *)pkt;
@@ -129,7 +129,7 @@ void arp_main(mypcap_t *p, uint8_t *pkt, unsigned int len) {
  * arp_send() - Send out packets from upper layer to the specificed destination
  * IP address.
  **/
-void arp_send(mypcap_t *p, uint8_t *dst_ip, uint16_t eth_type, uint8_t *payload,
+void arp_send(netdevice_t *p, uint8_t *dst_ip, uint16_t eth_type, uint8_t *payload,
               int payload_len) {
   uint8_t *eth_dst;
   eth_hdr_t eth_hdr;
@@ -140,7 +140,7 @@ void arp_send(mypcap_t *p, uint8_t *dst_ip, uint16_t eth_type, uint8_t *payload,
   if ((eth_dst = arptable_existed(dst_ip)) != NULL) {
     /* Send directly if MAC available */
     COPY_ETH_ADDR(eth_hdr.eth_dst, eth_dst);
-    if (mypcap_send(p, eth_hdr, payload, payload_len) != 0) {
+    if (netdevice_xmit(p, eth_hdr, payload, payload_len) != 0) {
       fprintf(stderr, "Failed to send.\n");
     }
 #if (DEBUG_ARP == 1)
@@ -170,7 +170,7 @@ void arp_send(mypcap_t *p, uint8_t *dst_ip, uint16_t eth_type, uint8_t *payload,
 /**
  * arp_resend() - Re-send the queued packet
  **/
-void arp_resend(mypcap_t *p) {
+void arp_resend(netdevice_t *p) {
 #if (DEBUG_ARP == 1)
   printf(
       "arp_resend(): Obtained the MAC address of %s. "
