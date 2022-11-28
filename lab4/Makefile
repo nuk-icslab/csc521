@@ -8,7 +8,7 @@ LIBDIR := ../lib/src
 CONFIG := config
 
 CC := gcc
-FLAGS := $(shell cat $(CONFIG) | awk '/^[^#]+$$/ {print "-D"$$0}' ORS=' ')
+FLAGS := $(shell cat $(CONFIG) | awk '/^[^\#]+$$/ {print "-D"$$0}' ORS=' ')
 CFLAGS := -g -O2 -Wall -fsanitize=address $(FLAGS)
 INCLUDES := -Isrc -I../lib/include
 LDFLAGS := -lpcap -fsanitize=address
