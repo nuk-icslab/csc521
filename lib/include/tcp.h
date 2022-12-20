@@ -13,17 +13,9 @@
 #ifndef DEBUG_TCP
 #define DEBUG_TCP 0
 #endif  // DEBUG_TCP
-#ifndef DEBUG_TCP_FILTER
-#define DEBUG_TCP_FILTER 0
-#endif  // DEBUG_TCP_FILTER
 #ifndef DEBUG_TCP_DUMP
 #define DEBUG_TCP_DUMP 0
 #endif  // DEBUG_TCP_DUMP
-
-/*====================*
- ***** Parameters *****
- *====================*/
-#define TCP_FILTER_PORT 0x5679
 
 /*============================*
  ***** Protocol Constants *****
@@ -59,12 +51,16 @@ typedef struct {
   myip_param_t ip;
 } mytcp_param_t;
 
+typedef void (*tcp_raw_handler)(myip_hdr_t *ip_hdr, mytcp_hdr_t *tcp_hdr,
+                                uint8_t *data, int len);
+
 /*========================*
  ***** Public Methods *****
  *========================*/
 extern void tcp_main(netdevice_t *p, uint8_t *pkt, int len);
-extern void tcp_send(netdevice_t *p, mytcp_param_t tcp_param, uint8_t *payload,
-                     int payload_len);
+extern void tcp_syn(netdevice_t *p, mytcp_param_t tcp_param, uint8_t *payload,
+                    int payload_len);
+extern void tcp_set_raw_handler(tcp_raw_handler callback);
 
 /*===========================*
  ***** Private Utilities *****

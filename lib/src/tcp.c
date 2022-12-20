@@ -23,6 +23,8 @@ static char *tcp_flagstr(uint8_t flags) {
 }
 #endif  // DEBUG_TCP
 
+static tcp_raw_handler raw_handler = NULL;
+
 /*
  * tcp_checksum() - Calculate checksum of TCP segment with IPv4 pseudo header
  */
@@ -52,12 +54,17 @@ static uint16_t tcp_checksum(myip_param_t *ip_param, uint8_t *pkt, int tcplen) {
 }
 
 /*
+ * tcp_set_raw_handler(): Register the callback to handle raw TCP segments
+ */
+void tcp_set_raw_handler(tcp_raw_handler callback) { raw_handler = callback; }
+
+/*
  * tcp_main(): The main procedure for incoming TCP segments
  */
 void tcp_main(netdevice_t *p, uint8_t *pkt, int len) {
   myip_hdr_t *ip_hdr;
   mytcp_hdr_t *tcp_hdr;
-  int ip_hdr_len;
+  int ip_hdr_len, tcp_hdr_len;
 
   ip_hdr = (myip_hdr_t *)pkt;
   ip_hdr_len = hlen(ip_hdr) * 4;
@@ -65,10 +72,9 @@ void tcp_main(netdevice_t *p, uint8_t *pkt, int len) {
   len -= ip_hdr_len;
 
   tcp_hdr = (mytcp_hdr_t *)pkt;
-
-#if (DEBUG_TCP == 1 && DEBUG_TCP_FILTER == 1)
-  if (swap16(tcp_hdr->dstport) != TCP_FILTER_PORT) return;
-#endif  // DEBUG_TCP == 1 && DEBUG_TCP_FILTER == 1
+  tcp_hdr_len = ((tcp_hdr->hlen) >> 3) * 4;
+  pkt += tcp_hdr_len;
+  len -= tcp_hdr_len;
 
 #if (DEBUG_TCP == 1)
   myip_param_t ip_param;
@@ -89,12 +95,15 @@ void tcp_main(netdevice_t *p, uint8_t *pkt, int len) {
          (int)tcp_hdr->chksum, chk);
 #endif /* DEBUG_TCP */
 #if (DEBUG_TCP_DUMP == 1)
-  print_data((uint8_t *)pkt, len);
+  print_data((uint8_t *)tcp_hdr, tcp_hdr_len);
 #endif /* DEBUG_TCP_DUMP */
+  if (raw_handler) {
+    (*raw_handler)(ip_hdr, tcp_hdr, pkt, len);
+  }
 }
 
-void tcp_send(netdevice_t *p, mytcp_param_t tcp_param, uint8_t *payload,
-              int payload_len) {
+void tcp_syn(netdevice_t *p, mytcp_param_t tcp_param, uint8_t *payload,
+             int payload_len) {
   int hdr_len = sizeof(mytcp_hdr_t);
   int pkt_len = payload_len + hdr_len;
   uint8_t pkt[pkt_len];
@@ -119,7 +128,7 @@ void tcp_send(netdevice_t *p, mytcp_param_t tcp_param, uint8_t *payload,
   memcpy(pkt + sizeof(mytcp_hdr_t), payload, payload_len);
 
 #if (DEBUG_TCP)
-  printf("tcp_send(): %d->%s:%d, %s Len=%d, chksum=%04x\n",
+  printf("tcp_syn(): %d->%s:%d, %s Len=%d, chksum=%04x\n",
          (int)tcp_param.srcport, ip_addrstr(ip_param->dstip, NULL),
          (int)tcp_param.dstport, tcp_flagstr(tcp_hdr->flags), pkt_len,
          tcp_hdr->chksum);

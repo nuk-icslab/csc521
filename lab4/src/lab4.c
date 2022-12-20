@@ -10,6 +10,20 @@
 #include "util.h"
 
 extern char *defdnsquery;
+extern uint16_t tcp_filter_port;
+
+void rcvd_raw_tcp(myip_hdr_t *ip_hdr, mytcp_hdr_t *tcp_hdr, uint8_t *data,
+                  int len) {
+  if (swap16(tcp_hdr->dstport) != tcp_filter_port) return;
+  if (tcp_hdr->flags & TCP_FG_SYN && tcp_hdr->flags & TCP_FG_ACK) {
+    printf("Received SYN-ACK from %s:%d\n", ip_addrstr(ip_hdr->srcip, NULL),
+           swap16(tcp_hdr->srcport));
+  }
+  if (tcp_hdr->flags & TCP_FG_RST) {
+    printf("Received RST from %s:%d\n", ip_addrstr(ip_hdr->srcip, NULL),
+           swap16(tcp_hdr->srcport));
+  }
+}
 
 /**
  * main_proc() - the main thread
@@ -33,10 +47,10 @@ int main_proc(netdevice_t *p) {
 #if (FG_TCP_SEND_SYN == 1)
   mytcp_param_t tcp_param;
   COPY_IPV4_ADDR(tcp_param.ip.dstip, (uint8_t *)&ip);
-  tcp_param.srcport = TCP_FILTER_PORT;
+  tcp_param.srcport = tcp_filter_port;
   tcp_param.dstport = 80;
 
-  tcp_send(p, tcp_param, NULL, 0);
+  tcp_syn(p, tcp_param, NULL, 0);
 #endif  // FG_TCP_SEND_SYN
 #endif  // FG_DNS_QUERY
 
@@ -67,10 +81,10 @@ int main_proc(netdevice_t *p) {
 #if (FG_TCP_SEND_SYN == 1)
       mytcp_param_t tcp_param;
       COPY_IPV4_ADDR(tcp_param.ip.dstip, (uint8_t *)&ip);
-      tcp_param.srcport = TCP_FILTER_PORT;
+      tcp_param.srcport = tcp_filter_port;
       tcp_param.dstport = 80;
 
-      tcp_send(p, tcp_param, NULL, 0);
+      tcp_syn(p, tcp_param, NULL, 0);
 #endif  // FG_TCP_SEND_SYN
     } else {
       printf("Invalid IP (Enter to exit)\n");
@@ -111,6 +125,7 @@ int main(int argc, char *argv[]) {
    */
   netdevice_add_proto(p, ETH_ARP, (ptype_handler)&arp_main);
   netdevice_add_proto(p, ETH_IP, (ptype_handler)&ip_main);
+  tcp_set_raw_handler((tcp_raw_handler)&rcvd_raw_tcp);
 
   main_proc(p);
 
