@@ -10,6 +10,6 @@ uint8_t defarpip[] = {192, 168, 88, 254};
 uint8_t defpingip[] = {140, 127, 208, 18};
 
 uint8_t defdnsip[] = {8, 8, 8, 8};
-char* defdnsquery = "www.csie.nuk.edu.tw";
+char* defdnsquery = "csc521.csie.nuk.edu.tw";
 
 uint16_t tcp_filter_port = 0x5678;
